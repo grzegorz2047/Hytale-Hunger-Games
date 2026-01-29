@@ -14,6 +14,9 @@ import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.system.WorldConfigSaveSystem;
@@ -23,6 +26,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.storage.component.ChunkSavingSystems;
 import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGenProvider;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
 import pl.grzegorz2047.hytale.hungergames.db.ArenaRepository;
 import pl.grzegorz2047.hytale.hungergames.db.InMemoryRepository;
 import pl.grzegorz2047.hytale.hungergames.db.SqliteArenaRepository;
@@ -80,11 +84,12 @@ public class ArenaManager {
         return true;
     }
 
-    public boolean forceStartArena(String arenaName) {
+    public boolean forceStartArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
             return false;
         }
         HgArena hgArena = getArena(arenaName);
+        hgArena.join(player);
         return hgArena.forceStart();
     }
 
@@ -143,7 +148,9 @@ public class ArenaManager {
 
 
     public boolean isArenaIngame(String arenaName) {
-        return false;
+        if (!this.arenaExists(arenaName)) return false;
+        HgArena arena = getArena(arenaName);
+        return arena != null && arena.isIngame();
     }
 
     public void createArenaWithSpace(@NonNullDecl CommandContext context, String worldName, CommandSender sender, int numberOfSpawnPoint, int radius) {
@@ -372,6 +379,36 @@ public class ArenaManager {
     }
 
     public boolean isPlayerPlayingOnArena(String arenaName) {
-        return false;
+        if (!this.arenaExists(arenaName)) return false;
+        HgArena arena = getArena(arenaName);
+        if (arena == null) return false;
+        // zwraca true jeśli ktoś aktualnie jest przypisany do areny (oczekuje lub gra)
+        return arena.getActivePlayerCount() > 0;
+    }
+
+    public void preparePlayerJoinedServer(Player player) {
+        Inventory inventory = player.getInventory();
+        inventory.clear();
+        inventory.setActiveHotbarSlot((byte) 0);
+        ItemContainer hotbar = inventory.getHotbar();
+        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Book_Mana", 1);
+        hotbar.setItemStackForSlot((short) 0, arenaChooser);
+        player.getInventory().markChanged();
+    }
+
+    public int getNumberOfArena() {
+        return this.listOfArenas.size();
+    }
+
+    public List<ArenaStat> getArenaStats() {
+        return this.listOfArenas.values().stream().filter(HgArena::isActive)
+                .map(arena -> new ArenaStat(
+                        arena.getWorldName(),
+                        arena.isActive(),
+                        arena.isIngame(),
+                        arena.getActivePlayerCount(),
+                        arena.getArenaSize()
+                ))
+                .toList();
     }
 }

@@ -1,0 +1,22 @@
+{
+    "Group": "Hytale",
+    "Name": "HungerGames",
+    "Version": "0.0.2",
+    "Description": "Player Hunger games minigames in hytale!",
+    "Authors": [
+        {
+            "Name": "grzegorz2047"
+        }
+    ],
+    "Website": "grzegorz2047.pl",
+    "ServerVersion": "*",
+    "Dependencies": {
+        "Hytale:PlayerInteractLib": "*"
+    },
+    "OptionalDependencies": {
+        
+    },
+    "DisabledByDefault": false,
+    "Main": "pl.grzegorz2047.hytale.hungergames.HungerGames",
+    "IncludesAssetPack": true
+}

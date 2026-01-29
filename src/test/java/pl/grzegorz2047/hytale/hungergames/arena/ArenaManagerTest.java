@@ -39,10 +39,10 @@ class ArenaManagerTest {
         ArenaManager manager = new ArenaManager();
 
         // brak areny => false
-        assertFalse(manager.forceStartArena("nope"));
+        assertFalse(manager.forceStartArena("nope", context.sender()));
 
         // po utworzeniu => forceStart zwraca true (implementacja HgArena)
         manager.createArena("a1", List.of(new Vector3d(1,2,3)), new Vector3d(0,0,0));
-        assertTrue(manager.forceStartArena("a1"));
+        assertTrue(manager.forceStartArena("a1", context.sender()));
     }
 }

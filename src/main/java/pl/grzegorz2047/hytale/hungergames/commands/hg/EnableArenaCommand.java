@@ -45,7 +45,7 @@ public class EnableArenaCommand extends AbstractCommand {
         worldConfig.setCanSaveChunks(false);
         worldConfig.markChanged();
         this.arenaManager.setEnableArena(worldName, true);
-
+        sender.sendMessage(Message.raw("Arena enabled"));
         return null;
     }
 

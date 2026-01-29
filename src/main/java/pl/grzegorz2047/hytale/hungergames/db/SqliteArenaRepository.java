@@ -87,7 +87,7 @@ public class SqliteArenaRepository implements ArenaRepository {
         if (spawnPoints == null || spawnPoints.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
         for (Vector3d p : spawnPoints) {
-            if (sb.length() > 0) sb.append(';');
+            if (!sb.isEmpty()) sb.append(';');
             sb.append(p.getX()).append(',').append(p.getY()).append(',').append(p.getZ());
         }
         return sb.toString();
@@ -101,9 +101,9 @@ public class SqliteArenaRepository implements ArenaRepository {
             String[] nums = part.split(",");
             if (nums.length != 3) continue;
             try {
-                int x = Integer.parseInt(nums[0]);
-                int y = Integer.parseInt(nums[1]);
-                int z = Integer.parseInt(nums[2]);
+                double x = Double.parseDouble(nums[0]);
+                double y = Double.parseDouble(nums[1]);
+                double z = Double.parseDouble(nums[2]);
                 out.add(new Vector3d(x, y, z));
             } catch (NumberFormatException ignored) {}
         }
