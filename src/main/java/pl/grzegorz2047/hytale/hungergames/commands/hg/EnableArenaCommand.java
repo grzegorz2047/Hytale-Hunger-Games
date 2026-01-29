@@ -7,6 +7,8 @@ import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.WorldConfig;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
@@ -14,15 +16,15 @@ import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import javax.annotation.Nonnull;
 import java.util.concurrent.CompletableFuture;
 
-public class InitArenaCommand extends AbstractCommand {
+public class EnableArenaCommand extends AbstractCommand {
 
     @Nonnull
     private final RequiredArg<String> worldNameArg;
     private final ArenaManager arenaManager;
 
-    public InitArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
+    public EnableArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
         super(name, description);
-        this.worldNameArg = this.withRequiredArg("arenaname", "creates arena", ArgTypes.STRING);
+        this.worldNameArg = this.withRequiredArg("arenaname", "enables arena", ArgTypes.STRING);
         this.arenaManager = arenaManager;
     }
 
@@ -32,18 +34,17 @@ public class InitArenaCommand extends AbstractCommand {
         CommandSender sender = context.sender();
         String worldName = this.worldNameArg.get(context);
 
-        int numberOfSpawnPoint = 8;
-        int radius = 25;
-
-        if (Universe.get().getWorld(worldName) != null) {
+        World world = Universe.get().getWorld(worldName);
+        if (world == null || !arenaManager.arenaExists(worldName)) {
             sender.sendMessage(
-                    Message.translation("server.universe.addWorld.alreadyExists")
-                            .param("worldName", worldName)
+                    Message.raw("Arena doesnt exist")
             );
             return null;
         }
-
-        arenaManager.createArenaSpace(context, worldName, sender, numberOfSpawnPoint, radius);
+        WorldConfig worldConfig = world.getWorldConfig();
+        worldConfig.setCanSaveChunks(false);
+        worldConfig.markChanged();
+        this.arenaManager.setEnableArena(worldName, true);
 
         return null;
     }

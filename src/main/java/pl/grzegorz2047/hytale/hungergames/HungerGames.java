@@ -7,10 +7,14 @@ import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginManager;
-import pl.grzegorz2047.hytale.hungergames.commands.hg.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.commands.hg.HungerGamesCommand;
 import pl.grzegorz2047.hytale.hungergames.events.PlayerInteractMouseEventListener;
+import pl.grzegorz2047.hytale.hungergames.systems.BreakBlockListenerSystem;
 import pl.grzegorz2047.hytale.hungergames.systems.InventoryUseListenerSystem;
+import pl.grzegorz2047.hytale.hungergames.systems.PlaceBlockListenerSystem;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
+import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.Flow;
@@ -63,10 +67,12 @@ public class HungerGames extends JavaPlugin {
         });
         new PlayerInteractMouseEventListener(this).register(getEventRegistry());
         new InventoryUseListenerSystem(this).register(getEntityStoreRegistry());
+        new PlaceBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
+        new BreakBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager));
     }
 
-    private static void debugInteraction(pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent item) {
+    private static void debugInteraction(PlayerInteractionEvent item) {
         SyncInteractionChain i = item.interaction();
         InteractionChainData d = i.data;
 

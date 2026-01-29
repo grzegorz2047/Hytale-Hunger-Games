@@ -1,10 +1,8 @@
-package pl.grzegorz2047.hytale.hungergames;
+package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
 import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
-import pl.grzegorz2047.hytale.hungergames.commands.hg.ForceStartArenaCommand;
-import pl.grzegorz2047.hytale.hungergames.commands.hg.InitArenaCommand;
-import pl.grzegorz2047.hytale.hungergames.commands.hg.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 
 /**
  * This is an example command that will simply print the name of the plugin in chat when used.
@@ -21,7 +19,9 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;
 //        this.addSubCommand(new TeleportAllCommand());
+        this.addSubCommand(new EnableArenaCommand("enable", "enables arena", arenaManager));
         this.addSubCommand(new InitArenaCommand("init", "creates arena", arenaManager));
         this.addSubCommand(new ForceStartArenaCommand("forcestart", "starts arena now", arenaManager));
+        this.addSubCommand(new ForceStartArenaCommand("join", "enters arena", arenaManager));
     }
 }

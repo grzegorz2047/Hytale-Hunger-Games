@@ -5,6 +5,11 @@ plugins {
 
 import org.gradle.internal.os.OperatingSystem
 
+// Dodane repozytoria, aby można było pobrać zależności testowe (np. JUnit)
+repositories {
+    mavenCentral()
+}
+
 ext {
     if (project.hasProperty('hytale_home')) {
         hytaleHome = project.findProperty('hytale_home')
@@ -26,15 +31,14 @@ ext {
     }
 }
 
-if (!project.hasProperty('hytaleHome')) {
-    throw new GradleException('Your Hytale install could not be detected automatically. If you are on an unsupported platform or using a custom install location, please define the install location using the hytale_home property.');
-}
-else if (!file(project.findProperty('hytaleHome')).exists()) {
-    throw new GradleException("Failed to find Hytale at the expected location. Please make sure you have installed the game. The expected location can be changed using the hytale_home property. Currently looking in ${project.findProperty('hytaleHome')}")
-}
+// --- Zamiast przerywać konfigurację gdy brak hytaleHome, robimy Hytale opcjonalnym ---
+// (usunięto blok wyrzucający GradleException)
+
+// zapewnij domyślną wersję Javy, jeśli nie ustawiono właściwości java_version
+def javaVersion = project.hasProperty('java_version') ? Integer.parseInt(project.findProperty('java_version').toString()) : 17
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    toolchain.languageVersion = JavaLanguageVersion.of(javaVersion)
     withSourcesJar()
     withJavadocJar()
 }
@@ -49,7 +53,23 @@ javadoc {
 // the official launcher for now.
 dependencies {
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
-    implementation(files("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar"))
+
+    // Dodaj Hytale server JAR tylko jeśli fizyczny plik istnieje (nie przerywamy builda)
+    def serverJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
+    if (serverJar.exists()) {
+        implementation(files(serverJar))
+    } else {
+        logger.lifecycle("Hytale server jar not found at ${serverJar}. Continuing without it (tests will use stubs).")
+    }
+
+    // SQLite JDBC (lokalna baza danych)
+    implementation 'org.xerial:sqlite-jdbc:3.42.0.0'
+
+    // Dodane zależności testowe
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    // Zapewnij runtime dla JUnit Platform (launcher) oraz silnik JUnit Jupiter
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
 }
 
 // Create the working directory to run the server if it does not already exist.
@@ -129,4 +149,9 @@ tasks.register('generateVSCodeLaunch') {
         ]
         launchFile.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson(launchConfig))
     }
+}
+
+// Dodaj konfigurację uruchamiania testów JUnit Platform
+tasks.named('test') {
+    useJUnitPlatform()
 }
