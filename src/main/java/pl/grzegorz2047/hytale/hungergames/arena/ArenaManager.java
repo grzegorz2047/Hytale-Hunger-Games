@@ -29,7 +29,6 @@ import pl.grzegorz2047.hytale.hungergames.db.SqliteArenaRepository;
 
 import javax.annotation.Nonnull;
 import java.io.File;
-import java.sql.*;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -38,6 +37,8 @@ import java.util.logging.Level;
 ...existing code...
 */
 public class ArenaManager {
+    private final int maxHeight = 10;
+    private final int spawnHeightYPos = maxHeight + 20;
     HashMap<String, HgArena> listOfArenas = new HashMap<>();
 
     private final ArenaRepository repository;
@@ -141,12 +142,11 @@ public class ArenaManager {
     }
 
 
-
     public boolean isArenaIngame(String arenaName) {
         return false;
     }
 
-    public void createArenaSpace(@NonNullDecl CommandContext context, String worldName, CommandSender sender, int numberOfSpawnPoint, int radius) {
+    public void createArenaWithSpace(@NonNullDecl CommandContext context, String worldName, CommandSender sender, int numberOfSpawnPoint, int radius) {
         String generatorType = "Flat";
         BuilderCodec<? extends IWorldGenProvider> providerCodec =
                 IWorldGenProvider.CODEC.getCodecFor(generatorType);
@@ -154,7 +154,7 @@ public class ArenaManager {
         if (providerCodec == null) {
             throw new IllegalArgumentException("Unknown generatorType '" + generatorType + "'");
         }
-
+        Vector3d lobbySpawnLocation = new Vector3d(0, spawnHeightYPos, 0);
         CompletableFutureUtil._catch(
                 Universe.get().addWorld(worldName, generatorType, "default")
                         .thenAccept(world -> {
@@ -186,9 +186,7 @@ public class ArenaManager {
 
                                 generationTasks.add(task);
                             }
-                            int maxHeight = 10;
                             int hillRadius = 10;
-                            Vector3d lobbySpawnLocation = new Vector3d(0, maxHeight + 20, 0);
                             generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Wood_Blackwood_Ornate"), 10));
                             generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
                             CompletableFuture
@@ -197,7 +195,7 @@ public class ArenaManager {
                                         boolean isCreated = createArena(worldName, spawnPoints, lobbySpawnLocation);
                                         if (isCreated) {
                                             sender.sendMessage(
-                                                    Message.raw("Arena wygenerowana!")
+                                                    Message.raw("Arena generated!")
                                             );
                                         }
                                         CompletableFuture.runAsync(() -> saveWorld(world), world).thenRun(() -> {
@@ -349,5 +347,31 @@ public class ArenaManager {
     @Nonnull
     private static CompletableFuture<Void> saveWorld(@Nonnull World world) {
         return CompletableFuture.allOf(WorldConfigSaveSystem.saveWorldConfigAndResources(world), ChunkSavingSystems.saveChunksInWorld(world.getChunkStore().getStore()));
+    }
+
+    public void createArena(String worldName, int numberOfSpawnPoint) {
+        int radius = 25;
+        List<Vector3d> spawnPoints = generateSpawnPoints(numberOfSpawnPoint, radius);
+        Vector3d lobbySpawnLocation = new Vector3d(0, spawnHeightYPos, 0);
+        createArena(worldName, spawnPoints, lobbySpawnLocation);
+    }
+
+    @NonNullDecl
+    private static List<Vector3d> generateSpawnPoints(int numberOfSpawnPoint, int radius) {
+        List<Vector3d> spawnPoints = new ArrayList<>();
+        for (int i = 0; i < numberOfSpawnPoint; i++) {
+            double angle = 2 * Math.PI * i / numberOfSpawnPoint;
+
+            int x = (int) Math.round(Math.cos(angle) * radius);
+            int y = 0;
+            int z = (int) Math.round(Math.sin(angle) * radius);
+            Vector3d spawnPoint = new Vector3d(x, y + 1, z);
+            spawnPoints.add(spawnPoint);
+        }
+        return spawnPoints;
+    }
+
+    public boolean isPlayerPlayingOnArena(String arenaName) {
+        return false;
     }
 }

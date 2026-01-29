@@ -7,8 +7,11 @@ import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginManager;
+import com.hypixel.hytale.server.core.util.Config;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.commands.hg.HungerGamesCommand;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.events.PlayerInteractMouseEventListener;
 import pl.grzegorz2047.hytale.hungergames.systems.BreakBlockListenerSystem;
 import pl.grzegorz2047.hytale.hungergames.systems.InventoryUseListenerSystem;
@@ -17,6 +20,7 @@ import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
@@ -28,11 +32,18 @@ public class HungerGames extends JavaPlugin {
 
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final ArenaManager arenaManager = new ArenaManager();
-//    private final SubmissionPublisher<PlayerInteractionEvent> publisher = new SubmissionPublisher<>();
+    private Config<MainConfig> config;
+    //    private final SubmissionPublisher<PlayerInteractionEvent> publisher = new SubmissionPublisher<>();
 
     public HungerGames(@Nonnull JavaPluginInit init) {
         super(init);
         LOGGER.atInfo().log("Hello from " + this.getName() + " version " + this.getManifest().getVersion().toString());
+    }
+    @NullableDecl
+    @Override
+    public CompletableFuture<Void> preLoad() {
+        this.config = loadConfig();
+        return super.preLoad();
     }
 
     @Override
@@ -66,7 +77,7 @@ public class HungerGames extends JavaPlugin {
             }
         });
         new PlayerInteractMouseEventListener(this).register(getEventRegistry());
-        new InventoryUseListenerSystem(this).register(getEntityStoreRegistry());
+        new InventoryUseListenerSystem(this, arenaManager, config.get()).register(getEntityStoreRegistry());
         new PlaceBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new BreakBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager));
@@ -101,6 +112,13 @@ public class HungerGames extends JavaPlugin {
         }
 
         System.out.println("=======================================");
+    }
+
+    private Config<MainConfig> loadConfig() {
+        config = this.withConfig("HungerGames", MainConfig.CODEC);
+        this.config.load();
+        this.config.save();
+        return config;
     }
 }
 

@@ -5,8 +5,10 @@ import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
 import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.windows.ContainerBlockWindow;
 import com.hypixel.hytale.server.core.event.events.ecs.UseBlockEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.inventory.transaction.ClearTransaction;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.meta.BlockState;
@@ -14,20 +16,25 @@ import com.hypixel.hytale.server.core.universe.world.meta.state.ItemContainerSta
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
+import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore,   UseBlockEvent.Pre> {
+public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, UseBlockEvent.Pre> {
     private final HungerGames plugin;
+    private final ArenaManager arenaManager;
+    private final List<ItemStack> stacks;
+    private final MainConfig mainConfig;
 
-    public InventoryUseListenerSystem(HungerGames plugin) {
+    public InventoryUseListenerSystem(HungerGames plugin, ArenaManager arenaManager, MainConfig mainConfig) {
         super(UseBlockEvent.Pre.class);
         this.plugin = plugin;
+        this.arenaManager = arenaManager;
+        this.mainConfig = mainConfig;
+        stacks = List.of(mainConfig.getItemsToFillChest());
     }
 
 
@@ -42,19 +49,35 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore,  
         Player player = store.getComponent(useBlockEventPre.getContext().getEntity(), Player.getComponentType());
 
         Vector3i target = useBlockEventPre.getTargetBlock();
+        assert player != null;
         World world = player.getWorld();
+        assert world != null;
+        String name = world.getName();
+        if (!arenaManager.isArenaIngame(name)) {
+            return;
+        }
+        if (!arenaManager.isPlayerPlayingOnArena(name)) {
+            return;
+        }
         BlockState blockType = world.getState(target.getX(), target.getY(), target.getZ(), true);
 
         if (blockType instanceof ItemContainerState itemContainerState) {
             if (useBlockEventPre.getInteractionType().toString().equals("Use")) {
 
-                if (!itemContainerState.getWindows().isEmpty()) {
+                Map<UUID, ContainerBlockWindow> windows = itemContainerState.getWindows();
+                if (!windows.isEmpty()) {
+                    windows.forEach((key, value) -> {
+                        ItemContainer itemContainer = value.getItemContainer();
+                        ItemStack itemStack = itemContainer.getItemStack((short) 0);
+                        assert itemStack != null;
+                        String itemId = itemStack.getItemId();
+                        System.out.println(itemId);
+                    });
                     useBlockEventPre.setCancelled(true);
                     return;
                 }
                 player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Opened inventory</color>"));
 
-                List<ItemStack> stacks = Arrays.asList(new ItemStack("Soil_Grass_Full", 6), new ItemStack("Soil_Grass_Full", 5));
                 short chestSize = itemContainerState.getItemContainer().getCapacity();
                 List<Short> slots = shuffleSlots(chestSize);
 

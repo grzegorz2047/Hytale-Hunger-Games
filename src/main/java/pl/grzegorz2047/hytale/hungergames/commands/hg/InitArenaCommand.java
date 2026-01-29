@@ -4,8 +4,10 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
+import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeFloat;
 import com.hypixel.hytale.server.core.universe.Universe;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
@@ -17,12 +19,14 @@ import java.util.concurrent.CompletableFuture;
 public class InitArenaCommand extends AbstractCommand {
 
     @Nonnull
-    private final RequiredArg<String> worldNameArg;
+    private final RequiredArg<String> arenaNameArg;
+    private final OptionalArg<Boolean> withWorldArg;
     private final ArenaManager arenaManager;
 
     public InitArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
         super(name, description);
-        this.worldNameArg = this.withRequiredArg("arenaname", "creates arena", ArgTypes.STRING);
+        this.arenaNameArg = this.withRequiredArg("arenaName", "creates arena", ArgTypes.STRING);
+        this.withWorldArg = this.withOptionalArg("withWorld", "generate also world", ArgTypes.BOOLEAN);
         this.arenaManager = arenaManager;
     }
 
@@ -30,7 +34,7 @@ public class InitArenaCommand extends AbstractCommand {
     @Override
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
-        String worldName = this.worldNameArg.get(context);
+        String worldName = this.arenaNameArg.get(context);
 
         int numberOfSpawnPoint = 8;
         int radius = 25;
@@ -42,9 +46,16 @@ public class InitArenaCommand extends AbstractCommand {
             );
             return null;
         }
+        if (this.withWorldArg.provided(context)) {
+            if (this.withWorldArg.get(context) == true) {
+                arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
+            } else {
+                arenaManager.createArena(worldName, numberOfSpawnPoint);
 
-        arenaManager.createArenaSpace(context, worldName, sender, numberOfSpawnPoint, radius);
-
+            }
+        } else {
+            arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
+        }
         return null;
     }
 
