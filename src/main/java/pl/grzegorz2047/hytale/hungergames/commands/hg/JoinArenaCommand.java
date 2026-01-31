@@ -33,7 +33,7 @@ public class JoinArenaCommand extends AbstractCommand {
             player.sendMessage(Message.raw("Arena is already ingame"));
             return null;
         }
-        arenaManager.addPlayer(arenaName, player);
+        arenaManager.joinArena(arenaName, player);
         return null;
     }
 }

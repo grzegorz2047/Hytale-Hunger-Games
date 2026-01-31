@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.Message;
@@ -18,10 +19,12 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.system.WorldConfigSaveSystem;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
+import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.storage.component.ChunkSavingSystems;
 import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGenProvider;
@@ -35,6 +38,7 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 /*
@@ -133,7 +137,7 @@ public class ArenaManager {
     }
 
 
-    public void addPlayer(String arenaName, Player player) {
+    public void joinArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
             player.sendMessage(Message.raw("Arena doesnt exist"));
             return;
@@ -141,6 +145,10 @@ public class ArenaManager {
         HgArena arena = this.getArena(arenaName);
         if (!arena.isActive()) {
             player.sendMessage(Message.raw("Arena is not active"));
+            return;
+        }
+        if (isPlayerOnAnyArena(player)) {
+            player.sendMessage(Message.raw("You are already on an arena. Leave this first."));
             return;
         }
         arena.join(player);
@@ -393,22 +401,43 @@ public class ArenaManager {
         ItemContainer hotbar = inventory.getHotbar();
         ItemStack arenaChooser = new ItemStack("Prototype_Tool_Book_Mana", 1);
         hotbar.setItemStackForSlot((short) 0, arenaChooser);
+
         player.getInventory().markChanged();
     }
+
 
     public int getNumberOfArena() {
         return this.listOfArenas.size();
     }
 
-    public List<ArenaStat> getArenaStats() {
-        return this.listOfArenas.values().stream().filter(HgArena::isActive)
+    public LinkedList<ArenaStat> getArenaStats() {
+        return new LinkedList<>(this.listOfArenas.values().stream().filter(HgArena::isActive)
                 .map(arena -> new ArenaStat(
                         arena.getWorldName(),
                         arena.isActive(),
                         arena.isIngame(),
                         arena.getActivePlayerCount(),
                         arena.getArenaSize()
-                ))
-                .toList();
+                )).sorted(Comparator.comparing(ArenaStat::arenaSize))
+                .toList());
+    }
+
+    public void playerLeft(PlayerRef playerRef) {
+        this.listOfArenas.forEach((_, value) -> value.playerLeft(playerRef));
+    }
+
+    public boolean isPlayerOnAnyArena(Player player) {
+        return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player));
+    }
+
+    public void teleportToLobby(PlayerRef playerRef) {
+        Ref<EntityStore> reference = playerRef.getReference();
+        World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+        ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+        Store<EntityStore> store = reference.getStore();
+        Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
+
+        Vector3d position = spawnPoint.getPosition();
+        addTeleportTask(reference, Universe.get().getDefaultWorld(), position);
     }
 }

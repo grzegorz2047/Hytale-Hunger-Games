@@ -9,6 +9,9 @@ import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.inventory.ItemStack;
+import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -37,6 +40,18 @@ public class HgArena {
 
     public int getArenaSize() {
         return this.spawnPoints.size();
+    }
+
+    public void playerLeft(PlayerRef playerRef) {
+        if(!activePlayers.contains(playerRef.getUuid())) {
+            return;
+        }
+        UUID uuid = playerRef.getUuid();
+        activePlayers.remove(uuid);
+    }
+
+    public boolean isPlayerInArena(Player player) {
+        return this.activePlayers.contains(player.getUuid());
     }
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
@@ -93,7 +108,6 @@ public class HgArena {
 
             if (currentCountdown <= 0) {
                 currentCountdown = deathmatchArenaSeconds;
-                state = GameState.WAITING;
                 World world = Universe.get().getWorld(worldName);
                 world.execute(() -> {
                     for (UUID active : activePlayers) {
@@ -110,9 +124,9 @@ public class HgArena {
                         p.sendMessage(Message.raw("Game ended! Returning to lobby."));
 
                     }
+                    reset();
                 });
 
-                reset();
             }
             if (this.activePlayers.isEmpty()) {
                 this.reset();
@@ -189,6 +203,7 @@ public class HgArena {
     }
 
     private void reset() {
+        this.activePlayers.clear();
         this.state = GameState.WAITING;
         this.currentCountdown = startingArenaSeconds;
     }
@@ -258,7 +273,7 @@ public class HgArena {
         player.getInventory().clear();
         player.getInventory().markChanged();
         activePlayers.add(uuid);
-
+        preparePlayerJoinedArena(player);
 
         player.getWorld().execute(() -> {
             assert player.getReference() != null;
@@ -270,7 +285,15 @@ public class HgArena {
             );
         });
     }
-
+    public void preparePlayerJoinedArena(Player player) {
+        Inventory inventory = player.getInventory();
+        inventory.clear();
+        inventory.setActiveHotbarSlot((byte) 0);
+        ItemContainer hotbar = inventory.getHotbar();
+        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Staff_Mana", 1);
+        hotbar.setItemStackForSlot((short) 0, arenaChooser);
+        player.getInventory().markChanged();
+    }
     // pomocnicze API do odczytu liczby aktywnych graczy
     public int getActivePlayerCount() {
         synchronized (activePlayers) {

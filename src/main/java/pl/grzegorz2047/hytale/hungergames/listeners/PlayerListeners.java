@@ -1,13 +1,12 @@
 package pl.grzegorz2047.hytale.hungergames.listeners;
 
+import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.event.events.player.PlayerConnectEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerDisconnectEvent;
-import com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent;
+import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -46,7 +45,20 @@ public class PlayerListeners {
         eventBus.register(PlayerConnectEvent.class, this::onPlayerConnect);
         eventBus.register(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
         eventBus.registerGlobal(PlayerReadyEvent.class, this::onPlayerJoin);
+        eventBus.registerGlobal(DrainPlayerFromWorldEvent.class, this::onPlayerWorldLeave);
+    }
 
+    private void onPlayerWorldLeave(DrainPlayerFromWorldEvent drainPlayerFromWorldEvent) {
+        Holder<EntityStore> holder = drainPlayerFromWorldEvent.getHolder();
+        PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
+        if (playerRef == null) {
+            return;
+        }
+        Player player = holder.getComponent(Player.getComponentType());
+        if (player == null) {
+            return;
+        }
+        arenaManager.playerLeft(playerRef);
     }
 
 
@@ -75,7 +87,7 @@ public class PlayerListeners {
      */
     private void onPlayerDisconnect(PlayerDisconnectEvent event) {
         String playerName = event.getPlayerRef().getUsername();
-
+        arenaManager.playerLeft(event.getPlayerRef());
     }
 
     private void onPlayerJoin(PlayerReadyEvent event) {

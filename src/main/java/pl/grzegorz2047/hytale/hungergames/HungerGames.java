@@ -1,20 +1,28 @@
 package pl.grzegorz2047.hytale.hungergames;
 
+import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
+import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.InteractionChainData;
 import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
+import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
+import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
+import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
 import pl.grzegorz2047.hytale.hungergames.commands.hg.HungerGamesCommand;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.events.PlayerInteractMouseEventListener;
@@ -27,10 +35,12 @@ import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
+import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
+
 
 /**
  * This class serves as the entrypoint for your plugin. Use the setup method to register into game registries or add
@@ -75,60 +85,29 @@ public class HungerGames extends JavaPlugin {
                 if (s == null) {
                     return;
                 }
-                if (s.equalsIgnoreCase("Prototype_Tool_Book_Mana")) {
-                    PlayerRef playerRef = Universe.get().getPlayer(UUID.fromString(item.uuid()));
-                    World world = Universe.get().getWorld(playerRef.getWorldUuid());
-                    world.execute(() -> {
-//                        String html = """
-//                                <div class="page-overlay">
-//                                    <div id="list" class="container">
-//                                        <div  class="container-contents">
-//                                            <p id="my-label">Hello, World!</p>
-//                                            <button id="my-button">Click Me</button>
-//                                        </div>
-//                                    </div>
-//                                </div>
-//                                """;
-//
-//                        PageBuilder page = PageBuilder.pageForPlayer(playerRef)
-//                                .fromHtml(html);
-//                        page.addEventListener("my-button", CustomUIEventBindingType.Activating,
-//                                (data, ctx) -> {
-//                                    playerRef.sendMessage(Message.raw("Button was pressed!"));
-//                                    var labelText = ctx.getValueAs("my-label", String.class).orElse("N/A");
-//                                    ctx.getById("my-label", LabelBuilder.class).ifPresent(labelBuilder -> {
-//                                        labelBuilder.withText("Woah, I changed!");
-//                                        ctx.updatePage(true);
-//                                    });
-//                                    ctx.getById("list", )
-//                                });
-//                        page.open(playerRef.getReference().getStore());
+                PlayerRef playerRef = Universe.get().getPlayer(UUID.fromString(item.uuid()));
+                World world = Universe.get().getWorld(playerRef.getWorldUuid());
 
-//                        TemplateProcessor template = new TemplateProcessor()
-//                                .setVariable("items", arenaManager.getArenaStats())
-//                                .setVariable("minPower", 10)
-//                                .registerComponent("showcaseItem", """
-//                                        <div style="background-color: #2a2a3e; padding: 8; anchor-height: 40; flex-direction: row;">
-//                                            {{#each items}}
-//                                              <p>{{$name}} ({{$meta.worldName}})</p>
-//                                              <p>{{$name}} ({{$meta.tier}})</p>
-//                                              <p>{{$name}} ({{$items.worldName}})</p>
-//                                            {{/each}}
-//                                        </div>
-//                                        """);
+                if (s.equalsIgnoreCase("Prototype_Tool_Staff_Mana")) {
+                    arenaManager.teleportToLobby(playerRef);
+                    return;
+                }
+                if (s.equalsIgnoreCase("Prototype_Tool_Book_Mana")) {
+
+                    world.execute(() -> {
                         String html = """
                                 <div class="page-overlay">
-                                    <div class="decorated-container" data-hyui-title="{{$title}}">
-                                        <div class="container-contents" style="layout-mode: Top;">
+                                    <div class="container" data-hyui-title="{{$title}}" style="anchor-height: 800;anchor-width: 900;">
+                                        <div class="container-contents" style="layout-mode: Top; ">
                                             <p id="summary" style="padding: 4;">{{$summary}}</p>
-                                
-                                            <div id="list" style="layout-mode: Top; padding: 6;">
+                                aaa
+                                            <div id="list" style="layout-mode: Top; padding: 6; ">
                                                 {{#each arenas}}
-                                                <div class="bounty-card" style="layout-mode: Left; padding: 4;">
+                                                <div class="bounty-card" style="layout-mode: Left; padding: 10;">
                                                     <p style="flex-weight: 2;">{{$worldName}}</p>
                                                     <p style="flex-weight: 1;">{{$activePlayerCount}}/{{$arenaSize}}</p>
                                                     <p style="flex-weight: 1;">ingame: {{$ingame}}</p>
-                                                    <button class="small-tertiary-button">Join</button>
+                                                    <button value="aaa" data="bbb" id="btn-{{$worldName}}" class="small-tertiary-button">Join</button>
                                                 </div>
                                                 {{/each}}
                                             </div>
@@ -136,14 +115,27 @@ public class HungerGames extends JavaPlugin {
                                     </div>
                                 </div>
                                 """;
-
+                        Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
+                        if (player == null) {
+                            return;
+                        }
+                        LinkedList<ArenaStat> arenaStats = arenaManager.getArenaStats();
                         TemplateProcessor template = new TemplateProcessor()
                                 .setVariable("title", "Arena list")
-                                .setVariable("summary", "Showing " + arenaManager.getArenaStats().size() + " arenas")
-                                .setVariable("arenas", arenaManager.getArenaStats());
+                                .setVariable("summary", "Showing " + arenaStats.size() + " arenas")
+                                .setVariable("arenas", arenaStats);
 
-                        PageBuilder.pageForPlayer(playerRef)
+                        PageBuilder pageBuilder = PageBuilder.pageForPlayer(playerRef)
                                 .fromTemplate(html, template)
+                                .withLifetime(CustomPageLifetime.CanDismissOrCloseThroughInteraction);
+                        arenaStats.forEach(arenaStat -> {
+                            pageBuilder.addEventListener("btn-" + arenaStat.worldName(), CustomUIEventBindingType.Activating, (data, ctx) -> {
+                                System.out.println(data);
+                                ctx.getPage().ifPresent(HyUIPage::close);
+                                arenaManager.joinArena(arenaStat.worldName(), player);
+                            });
+                        });
+                        pageBuilder
                                 .open(playerRef.getReference().getStore());
 
                     });
@@ -207,6 +199,11 @@ public class HungerGames extends JavaPlugin {
         this.config.load();
         this.config.save();
         return config;
+    }
+
+    @NullableDecl
+    private static Player findPlayerInPlayerComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
+        return store.getComponent(refEntityStore, Player.getComponentType());
     }
 }
 
