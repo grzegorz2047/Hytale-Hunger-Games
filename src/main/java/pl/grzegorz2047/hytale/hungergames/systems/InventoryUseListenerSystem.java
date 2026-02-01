@@ -47,11 +47,15 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
 
         Ref<EntityStore> playerRef = useBlockEventPre.getContext().getEntity();
         Player player = store.getComponent(useBlockEventPre.getContext().getEntity(), Player.getComponentType());
+        if (player == null) {
+            return;
+        }
 
         Vector3i target = useBlockEventPre.getTargetBlock();
-        assert player != null;
         World world = player.getWorld();
-        assert world != null;
+        if (world == null) {
+            return;
+        }
         String name = world.getName();
         if (!arenaManager.isArenaIngame(name)) {
             return;

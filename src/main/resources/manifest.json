@@ -14,7 +14,7 @@
         "Hytale:PlayerInteractLib": "*"
     },
     "OptionalDependencies": {
-        
+        "Buuz135:MultipleHUD": "*"
     },
     "DisabledByDefault": false,
     "Main": "pl.grzegorz2047.hytale.hungergames.HungerGames",

@@ -7,10 +7,8 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
@@ -30,6 +28,8 @@ import com.hypixel.hytale.server.core.universe.world.storage.component.ChunkSavi
 import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGenProvider;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 import pl.grzegorz2047.hytale.hungergames.db.ArenaRepository;
 import pl.grzegorz2047.hytale.hungergames.db.InMemoryRepository;
 import pl.grzegorz2047.hytale.hungergames.db.SqliteArenaRepository;
@@ -38,7 +38,6 @@ import javax.annotation.Nonnull;
 import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 
 /*
@@ -47,17 +46,19 @@ import java.util.logging.Level;
 public class ArenaManager {
     private final int maxHeight = 10;
     private final int spawnHeightYPos = maxHeight + 20;
+    private final MainConfig config;
     HashMap<String, HgArena> listOfArenas = new HashMap<>();
 
     private final ArenaRepository repository;
 
     // Domyślny konstruktor: próbuje użyć SQLite, w razie błędu fallback do in-memory
-    public ArenaManager() {
+    public ArenaManager(MainConfig config) {
+        this.config = config;
         ArenaRepository repo;
         try {
             File dataDir = new File("data");
             if (!dataDir.exists()) dataDir.mkdirs();
-            repo = new SqliteArenaRepository("data/arenas.db");
+            repo = new SqliteArenaRepository("data/arenas.db", config);
             repo.initialize();
         } catch (Throwable t) {
             System.out.println("Warning: SQLite unavailable, using in-memory repository: " + t.getMessage());
@@ -68,7 +69,8 @@ public class ArenaManager {
     }
 
     // Konstruktor do wstrzyknięcia innego repozytorium (np. zewnętrzne DB lub mock w testach)
-    public ArenaManager(ArenaRepository repository) {
+    public ArenaManager(MainConfig config, ArenaRepository repository) {
+        this.config = config;
         this.repository = repository;
         try {
             this.repository.initialize();
@@ -77,8 +79,13 @@ public class ArenaManager {
         loadFromRepository();
     }
 
+    // Dodany getter do konfiguracji
+    public MainConfig getConfig() {
+        return this.config;
+    }
+
     public boolean createArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation) {
-        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation);
+        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation, this.config);
         this.listOfArenas.put(worldName, arena);
         try {
             repository.save(arena);
@@ -93,7 +100,10 @@ public class ArenaManager {
             return false;
         }
         HgArena hgArena = getArena(arenaName);
-        hgArena.join(player);
+        if (hgArena == null) {
+            return false;
+        }
+        hgArena.join(player.getWorld(), player.getUuid());
         return hgArena.forceStart();
     }
 
@@ -106,7 +116,11 @@ public class ArenaManager {
             return true;
         }
         HgArena arena = this.getArena(worldName);
-        return !arena.isActive();
+        if (arena == null) {
+            return true;
+        }
+        // Blokuj niszczenie jeśli arena jest aktywna LUB trwa gra
+        return !arena.isActive() && !arena.isIngame();
     }
 
     private HgArena getArena(String worldName) {
@@ -139,19 +153,22 @@ public class ArenaManager {
 
     public void joinArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
-            player.sendMessage(Message.raw("Arena doesnt exist"));
+            String tpl = this.config.getTranslation("hungergames.arena.notFound");
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
         HgArena arena = this.getArena(arenaName);
         if (!arena.isActive()) {
-            player.sendMessage(Message.raw("Arena is not active"));
+            String tpl = this.config.getTranslation("hungergames.arena.notActive");
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
         if (isPlayerOnAnyArena(player)) {
-            player.sendMessage(Message.raw("You are already on an arena. Leave this first."));
+            String tpl = this.config.getTranslation("hungergames.arena.alreadyOnArena");
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
-        arena.join(player);
+        arena.join(player.getWorld(), player.getUuid());
     }
 
 
@@ -174,12 +191,9 @@ public class ArenaManager {
                 Universe.get().addWorld(worldName, generatorType, "default")
                         .thenAccept(world -> {
 
-                            sender.sendMessage(
-                                    Message.translation("server.universe.addWorld.worldCreated")
-                                            .param("worldName", worldName)
-                                            .param("generator", generatorType)
-                                            .param("storage", "default")
-                            );
+                            String tpl = this.config.getTranslation("server.universe.addWorld.worldCreated");
+                            String formatted = tpl == null ? "" : tpl.replace("{worldName}", worldName).replace("{generator}", generatorType).replace("{storage}", "default");
+                            sender.sendMessage(MessageColorUtil.rawStyled(formatted));
 
                             BlockType blockType = BlockType.fromString("Soil_Sand_Red");
 
@@ -209,25 +223,26 @@ public class ArenaManager {
                                     .thenRun(() -> {
                                         boolean isCreated = createArena(worldName, spawnPoints, lobbySpawnLocation);
                                         if (isCreated) {
-                                            sender.sendMessage(
-                                                    Message.raw("Arena generated!")
-                                            );
+                                            String tpl2 = this.config.getTranslation("hungergames.arena.generated");
+                                            sender.sendMessage(MessageColorUtil.rawStyled(tpl2));
                                         }
                                         CompletableFuture.runAsync(() -> saveWorld(world), world).thenRun(() -> {
-                                            context.sendMessage(Message.translation("server.commands.world.save.savingDone").param("world", world.getName()));
-                                            if (!(sender instanceof Player player)) {
-                                                return;
-                                            }
+                                            String tpl3 = this.config.getTranslation("server.commands.world.save.savingDone");
+                                            String formatted3 = tpl3 == null ? "" : tpl3.replace("{world}", world.getName());
+                                            context.sendMessage(MessageColorUtil.rawStyled(formatted3));
+                                             if (!(sender instanceof Player player)) {
+                                                 return;
+                                             }
 
-                                            player.getWorld().execute(() -> {
-                                                addTeleportTask(
-                                                        player.getReference(),
-                                                        world,
-                                                        lobbySpawnLocation
-                                                );
-                                            });
-                                        });
-                                    });
+                                             player.getWorld().execute(() -> {
+                                                 addTeleportTask(
+                                                         player.getReference(),
+                                                         world,
+                                                         lobbySpawnLocation
+                                                 );
+                                             });
+                                         });
+                                     });
                         })
         ).exceptionally(t -> {
             HytaleLogger.getLogger()
@@ -316,10 +331,20 @@ public class ArenaManager {
             World world,
             Vector3d spawnCoordPos
     ) {
-        Store<EntityStore> store = playerRef.getStore();
-        ComponentType<EntityStore, Teleport> componentType = Teleport.getComponentType();
-        Teleport teleport = Teleport.createForPlayer(world, spawnCoordPos, Vector3f.NaN);
-        store.addComponent(playerRef, componentType, teleport);
+        if (playerRef == null) return;
+        try {
+            Store<EntityStore> store = playerRef.getStore();
+            ComponentType<EntityStore, Teleport> componentType = Teleport.getComponentType();
+            Teleport teleport = Teleport.createForPlayer(world, spawnCoordPos, Vector3f.NaN);
+            // addComponent może rzucić IllegalStateException gdy ref jest nieważny - obsłużemy to
+            try {
+                store.addComponent(playerRef, componentType, teleport);
+            } catch (IllegalStateException ise) {
+                HytaleLogger.getLogger().atWarning().withCause(ise).log("Invalid entity reference when adding teleport (ArenaManager): %s", ise.getMessage());
+            }
+        } catch (Throwable t) {
+            HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to add teleport task (ArenaManager): %s", t.getMessage());
+        }
     }
 
     private List<CompletableFuture<Void>> generateHillTasks(
@@ -403,6 +428,18 @@ public class ArenaManager {
         hotbar.setItemStackForSlot((short) 0, arenaChooser);
 
         player.getInventory().markChanged();
+        World world = player.getWorld();
+        ISpawnProvider spawnProvider = Universe.get().getDefaultWorld().getWorldConfig().getSpawnProvider();
+
+//        world.execute(() -> {
+//            Transform spawnPoint = spawnProvider.getSpawnPoint(world, world.getWorldConfig().getUuid());
+//            Vector3d position = spawnPoint.getPosition();
+//            addTeleportTask(
+//                    player.getReference(),
+//                    world,
+//                    position
+//            );
+//        });
     }
 
 
@@ -430,14 +467,9 @@ public class ArenaManager {
         return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player));
     }
 
-    public void teleportToLobby(PlayerRef playerRef) {
-        Ref<EntityStore> reference = playerRef.getReference();
-        World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-        ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-        Store<EntityStore> store = reference.getStore();
-        Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
 
-        Vector3d position = spawnPoint.getPosition();
-        addTeleportTask(reference, Universe.get().getDefaultWorld(), position);
+
+    public void leaveArena(Player player) {
+        this.playerLeft(player.getPlayerRef());
     }
 }

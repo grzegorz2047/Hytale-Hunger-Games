@@ -2,6 +2,7 @@ package pl.grzegorz2047.hytale.hungergames.db;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import pl.grzegorz2047.hytale.hungergames.arena.HgArena;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 
 import java.io.File;
 import java.sql.*;
@@ -14,10 +15,12 @@ import java.util.Map;
 public class SqliteArenaRepository implements ArenaRepository {
     private final String dbPath;
     private final String jdbcUrl;
+    private final MainConfig config;
 
-    public SqliteArenaRepository(String dbPath) {
+    public SqliteArenaRepository(String dbPath, MainConfig config) {
         this.dbPath = dbPath;
         this.jdbcUrl = "jdbc:sqlite:" + dbPath;
+        this.config = config;
     }
 
     @Override
@@ -73,7 +76,7 @@ public class SqliteArenaRepository implements ArenaRepository {
                     int lz = rs.getInt("lobbyZ");
                     String sp = rs.getString("spawnpoints");
                     List<Vector3d> spawnPoints = deserializeSpawnPoints(sp);
-                    HgArena arena = new HgArena(world, spawnPoints, new Vector3d(lx, ly, lz));
+                    HgArena arena = new HgArena(world, spawnPoints, new Vector3d(lx, ly, lz), config);
                     arena.setActive(active == 1);
                     result.put(world, arena);
                 }

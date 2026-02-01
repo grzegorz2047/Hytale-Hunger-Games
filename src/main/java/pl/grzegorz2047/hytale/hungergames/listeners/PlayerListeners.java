@@ -6,13 +6,18 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.event.events.player.*;
+import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 
 
 import java.util.logging.Level;
@@ -29,10 +34,12 @@ public class PlayerListeners {
     private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
     private final HungerGames plugin;
     private final ArenaManager arenaManager;
+    private final Config<MainConfig> config;
 
-    public PlayerListeners(HungerGames plugin, ArenaManager arenaManager) {
+    public PlayerListeners(HungerGames plugin, ArenaManager arenaManager, Config<MainConfig> config) {
         this.plugin = plugin;
         this.arenaManager = arenaManager;
+        this.config = config;
     }
 
     /**
@@ -46,19 +53,40 @@ public class PlayerListeners {
         eventBus.register(PlayerDisconnectEvent.class, this::onPlayerDisconnect);
         eventBus.registerGlobal(PlayerReadyEvent.class, this::onPlayerJoin);
         eventBus.registerGlobal(DrainPlayerFromWorldEvent.class, this::onPlayerWorldLeave);
+        eventBus.registerGlobal(AddPlayerToWorldEvent.class, this::onPlayerWorldEnter);
     }
 
-    private void onPlayerWorldLeave(DrainPlayerFromWorldEvent drainPlayerFromWorldEvent) {
-        Holder<EntityStore> holder = drainPlayerFromWorldEvent.getHolder();
+    private String hudArenaInfo = """
+            <div>HELLO </div>
+            """;
+
+    private void onPlayerWorldEnter(AddPlayerToWorldEvent addPlayerToWorldEvent) {
+        Holder<EntityStore> holder = addPlayerToWorldEvent.getHolder();
+        World world = addPlayerToWorldEvent.getWorld();
+        Player player = getPlayer(holder);
+        if (player == null) return;
         PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
         if (playerRef == null) {
             return;
         }
-        Player player = holder.getComponent(Player.getComponentType());
-        if (player == null) {
-            return;
+        boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
+        if (playerOnAnyArena) {
+            HudManager hudManager = player.getHudManager();
+            hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
+//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef));
         }
-        arenaManager.playerLeft(playerRef);
+    }
+
+    @NullableDecl
+    private static Player getPlayer(Holder<EntityStore> holder) {
+        return holder.getComponent(Player.getComponentType());
+    }
+
+    private void onPlayerWorldLeave(DrainPlayerFromWorldEvent drainPlayerFromWorldEvent) {
+        Holder<EntityStore> holder = drainPlayerFromWorldEvent.getHolder();
+        Player player = getPlayer(holder);
+        if (player == null) return;
+        Inventory inventory = player.getInventory();
     }
 
 

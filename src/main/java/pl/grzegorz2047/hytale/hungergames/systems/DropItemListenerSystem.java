@@ -3,7 +3,6 @@ package pl.grzegorz2047.hytale.hungergames.systems;
 import com.hypixel.hytale.component.*;
 import com.hypixel.hytale.component.query.Query;
 import com.hypixel.hytale.component.system.EntityEventSystem;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.event.events.ecs.DropItemEvent;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
@@ -12,7 +11,6 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
-import pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil;
 
 public class DropItemListenerSystem extends EntityEventSystem<EntityStore, DropItemEvent.Drop> {
     private final HungerGames hungerGames;
@@ -36,9 +34,12 @@ public class DropItemListenerSystem extends EntityEventSystem<EntityStore, DropI
         World world = player.getWorld();
         if (world == null) return;
         ItemStack itemStack = event.getItemStack();
-        player.sendMessage(Message.raw(itemStack.getItemId()));
+        String tpl = arenaManager.getConfig().getTranslation("hungergames.item.id");
+        String formatted = tpl == null ? itemStack.getItemId() : tpl.replace("{id}", itemStack.getItemId());
+        player.sendMessage(pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil.rawStyled(formatted));
         if(itemStack.getItemId().equalsIgnoreCase("Prototype_Tool_Book_Mana")) {
-            player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>You cannot drop it</color>"));
+            String tpl2 = arenaManager.getConfig().getTranslation("hungergames.item.cannotDrop");
+            player.sendMessage(pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil.rawStyled(tpl2));
             event.setCancelled(true);
         }
 

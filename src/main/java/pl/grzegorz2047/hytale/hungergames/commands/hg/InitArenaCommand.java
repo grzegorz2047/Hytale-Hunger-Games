@@ -1,17 +1,16 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
-import com.hypixel.hytale.server.core.command.system.arguments.types.RelativeFloat;
 import com.hypixel.hytale.server.core.universe.Universe;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.CompletableFuture;
@@ -40,10 +39,9 @@ public class InitArenaCommand extends AbstractCommand {
         int radius = 25;
 
         if (Universe.get().getWorld(worldName) != null) {
-            sender.sendMessage(
-                    Message.translation("server.universe.addWorld.alreadyExists")
-                            .param("worldName", worldName)
-            );
+            String tpl = arenaManager.getConfig().getTranslation("server.universe.addWorld.alreadyExists");
+            String formatted = tpl == null ? "" : tpl.replace("{worldName}", worldName);
+            sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             return null;
         }
         if (this.withWorldArg.provided(context)) {

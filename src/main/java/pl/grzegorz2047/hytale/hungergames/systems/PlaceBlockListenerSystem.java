@@ -11,7 +11,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
-import pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 public class PlaceBlockListenerSystem extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
 
@@ -35,9 +35,11 @@ public class PlaceBlockListenerSystem extends EntityEventSystem<EntityStore, Pla
         if (player == null) return;
         World world = player.getWorld();
         if (world == null) return;
+
         if (!this.arenaManager.canBreak(world.getName())) {
             player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>You cannot place it</color>"));
             event.setCancelled(true);
+            return;
         }
         ItemStack item = event.getItemInHand();
 

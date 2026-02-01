@@ -3,17 +3,48 @@ package pl.grzegorz2047.hytale.hungergames.config;
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
 import com.hypixel.hytale.codec.builder.BuilderCodec;
-import com.hypixel.hytale.codec.codecs.array.ArrayCodec;
-import com.hypixel.hytale.codec.codecs.simple.StringCodec;
 import com.hypixel.hytale.codec.validation.Validators;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class MainConfig {
 
     private String[] itemsToFillChest = new String[]{"Soil_Grass_Full:6"};
+    private HashMap<String, String> messages = new HashMap<>();
+    private int minimumPlayersToStartArena = 2;
+    private final String[] messagesConfigArray = new String[]
+            {
+                    "noPermission:You do not have permission to perform this action.",
+                    "hungergames.arena.notFound:Arena doesn't exist.",
+                    "hungergames.arena.notActive:Arena is not active.",
+                    "hungergames.arena.alreadyOnArena:You are already on an arena. Leave this first.",
+                    "hungergames.arena.generated:Arena generated!",
+                    "hungergames.arena.joined:You have joined the arena: {worldName}",
+                    "hungergames.arena.left:You have left the arena: {worldName}",
+                    "hungergames.arena.full:Arena is full",
+                    "hungergames.arena.playerLeftBroadcast:Player left the arena. Current players: {count}",
+                    "hungergames.arena.countingCancelled:Countdown cancelled: not enough players",
+                    "hungergames.arena.startIn:Start in {seconds}s",
+                    "hungergames.arena.arenaStarted:Arena started!",
+                    "hungergames.arena.deathmatchStart:Deathmatch start!",
+                    "hungergames.arena.deathmatchIn:Deathmatch in {seconds}s",
+                    "hungergames.arena.gameEndsIn:Game ends in {seconds}s",
+                    "hungergames.arena.gameEndedReturn:Game ended! Returning to lobby.",
+                    "hungergames.arena.countingStarted:Counting started: game starts in {seconds}s",
+                    "hungergames.block.cannotBreak:<color=#FF0000>You cannot break it</color>",
+                    "hungergames.block.id:{id}",
+                    "hungergames.item.cannotDrop:<color=#FF0000>You cannot drop it</color>",
+                    "hungergames.item.id:{id}",
+                    "server.universe.addWorld.worldCreated:World {worldName} created with generator {generator} and storage {storage}.",
+                    "server.commands.world.save.savingDone:World {world} saved.",
+                    "server.universe.addWorld.alreadyExists:World {worldName} already exists."
+            };
 
+    public String getTranslation(String key) {
+        return messages.get(key);
+    }
 
     public ItemStack[] getItemsToFillChest() {
         return parseItemStacks(itemsToFillChest);
@@ -35,8 +66,23 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("MinimumPlayersToStartArena", Codec.INTEGER), (config, f) -> config.minimumPlayersToStartArena = f, (config) -> config.minimumPlayersToStartArena).addValidator(Validators.nonNull()).documentation("minimumPlayersToStartArena").add()
+            .append(new KeyedCodec<>("Messages", Codec.STRING_ARRAY), (config, f) -> config.messages = parseMessages(f), (config) -> config.messagesConfigArray).addValidator(Validators.nonNull()).documentation("messages").add()
             .append(new KeyedCodec<>("ItemsToFillChest", Codec.STRING_ARRAY), (config, f) -> config.itemsToFillChest = f, (config) -> config.itemsToFillChest).addValidator(Validators.nonNull()).documentation("worldsWithClockEnabled").add()
             .build();
 
+    private static <FieldType> HashMap<String, String> parseMessages(FieldType f) {
+        HashMap<String, String> stringStringHashMap = new HashMap<>();
+        for (String messageKey : ((String[]) f)) {
+            String[] split = messageKey.split(":");
+            if (split.length != 2) continue;
+            stringStringHashMap.put(split[0], split[1]);
+        }
+        return stringStringHashMap;
+    }
 
+
+    public int getMinimumPlayersToStartArena() {
+        return minimumPlayersToStartArena;
+    }
 }

@@ -3,21 +3,25 @@ package pl.grzegorz2047.hytale.hungergames.arena;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
+import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.inventory.Inventory;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,29 +34,18 @@ public class HgArena {
     private final String worldName;
     private final List<Vector3d> spawnPoints;
     private final Vector3d lobbySpawnLocation;
-    private int minimumStartArenaPlayersNumber = 2;
+    private final int minimumStartArenaPlayersNumber;
     private boolean isArenaEnabled = false;
     private int deathmatchArenaSeconds = 30;
     // Odliczanie / stan oczekiwania
     private final int startingArenaSeconds = 10; // domyślne odliczanie
     private final int ingameArenaSeconds = 30; // domyślne odliczanie
     private int currentCountdown = startingArenaSeconds;
+    //        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Staff_Mana", 1);
+//        hotbar.setItemStackForSlot((short) 0, arenaChooser);
+//        player.getInventory().markChanged();
+    // Prosty, poprawny fragment HUD z unikalnym ID
 
-    public int getArenaSize() {
-        return this.spawnPoints.size();
-    }
-
-    public void playerLeft(PlayerRef playerRef) {
-        if(!activePlayers.contains(playerRef.getUuid())) {
-            return;
-        }
-        UUID uuid = playerRef.getUuid();
-        activePlayers.remove(uuid);
-    }
-
-    public boolean isPlayerInArena(Player player) {
-        return this.activePlayers.contains(player.getUuid());
-    }
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
 
@@ -61,15 +54,58 @@ public class HgArena {
     // Zmienione: przechowujemy obiekty Player (lista oczekujących graczy)
     private final List<UUID> activePlayers = new ArrayList<>();
     private ScheduledFuture<?> scheduledTask;
+    private final MainConfig config;
 
 
-    public HgArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation) {
+    public HgArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation, MainConfig config) {
         this.worldName = worldName;
         this.spawnPoints = spawnPoints;
         this.lobbySpawnLocation = lobbySpawnLocation;
+        this.config = config;
+        this.minimumStartArenaPlayersNumber = config.getMinimumPlayersToStartArena();
         startClockScheduler();
     }
 
+    public int getArenaSize() {
+        return this.spawnPoints.size();
+    }
+
+    public void playerLeft(PlayerRef playerRef) {
+        if (!activePlayers.contains(playerRef.getUuid())) {
+            return;
+        }
+
+
+        UUID uuid = playerRef.getUuid();
+        activePlayers.remove(uuid);
+        UUID worldUuid = playerRef.getWorldUuid();
+        World world = Universe.get().getWorld(worldUuid);
+        world.execute(() -> {
+//            Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
+//            HudManager hudManager = player.getHudManager();
+//            hudManager.resetHud(playerRef);
+            teleportToLobby(playerRef);
+        });
+        String tpl = this.config.getTranslation("hungergames.arena.left");
+        playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
+        synchronized (activePlayers) {
+            String tpl2 = this.config.getTranslation("hungergames.arena.playerLeftBroadcast");
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tpl2 == null ? "" : tpl2.replace("{count}", String.valueOf(activePlayers.size()))));
+        }
+    }
+
+    private void broadcastMessageToActivePlayers(Message message) {
+        for (UUID playerUuid : activePlayers) {
+            PlayerRef p = Universe.get().getPlayer(playerUuid);
+            if (p != null) {
+                p.sendMessage(message);
+            }
+        }
+    }
+
+    public boolean isPlayerInArena(Player player) {
+        return this.activePlayers.contains(player.getUuid());
+    }
 
     public boolean forceStart() {
         // Wymuszenie startu: natychmiast ustawiamy stan ingame i teleportujemy graczy
@@ -95,111 +131,186 @@ public class HgArena {
     }
 
     private void updateArenaState() {
-        // co sekundę: sprawdzamy liczbę graczy i sterujemy odliczaniem/uruchomieniem gry
         int playersCount;
-        playersCount = activePlayers.size();
+        synchronized (activePlayers) {
+            playersCount = activePlayers.size();
+        }
+        World world = Universe.get().getWorld(worldName);
+        if (world == null) {
+            return;
+        }
+        Store<EntityStore> store = world.getEntityStore().getStore();
 
         if (state == GameState.INGAME_DEATHMATCH_PHASE) {
-            currentCountdown--;
-            for (UUID activePlayer : activePlayers) {
-                PlayerRef p = Universe.get().getPlayer(activePlayer);
-                p.sendMessage(Message.raw("game ends in " + currentCountdown + "s"));
-            }
+            countdown();
+
+            world.execute(() -> {
+                for (UUID activePlayer : activePlayers) {
+                    PlayerRef p = Universe.get().getPlayer(activePlayer);
+                    if (p == null) {
+                        continue;
+                    }
+                    Ref<EntityStore> reference = p.getReference();
+                    String tpl = this.config.getTranslation("hungergames.arena.gameEndsIn");
+                    Player player = findPlayerInPlayerComponentsBag(store, reference);
+                    if (player == null) {
+                        continue;
+                    }
+                    updateScoreboardTime(player);
+                    p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                }
+            });
 
             if (currentCountdown <= 0) {
                 currentCountdown = deathmatchArenaSeconds;
-                World world = Universe.get().getWorld(worldName);
                 world.execute(() -> {
-                    for (UUID active : activePlayers) {
-                        PlayerRef p = Universe.get().getPlayer(active);
-                        Ref<EntityStore> reference = p.getReference();
-                        assert reference != null;
-                        World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-                        ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-                        Store<EntityStore> store = reference.getStore();
-                        Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
+                    synchronized (activePlayers) {
+                        for (UUID active : new ArrayList<>(activePlayers)) {
+                            PlayerRef p = Universe.get().getPlayer(active);
+                            if (p == null || p.getReference() == null) continue;
+                            Ref<EntityStore> refForTeleport = p.getReference();
+                            // walidacja referencji przed użyciem
+                            try {
+                                World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+                                ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+                                Store<EntityStore> storeLocal = refForTeleport.getStore();
+                                Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
 
-                        Vector3d position = spawnPoint.getPosition();
-                        addTeleportTask(reference, Universe.get().getDefaultWorld(), position);
-                        p.sendMessage(Message.raw("Game ended! Returning to lobby."));
-
+                                Vector3d position = spawnPoint.getPosition();
+                                try {
+                                    addTeleportTask(refForTeleport, Universe.get().getDefaultWorld(), position);
+                                } catch (Throwable t) {
+                                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", active, t.getMessage());
+                                }
+                                String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
+                                p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                            } catch (Throwable t) {
+                                HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", active, t.getMessage());
+                            }
+                        }
                     }
                     reset();
                 });
-
             }
-            if (this.activePlayers.isEmpty()) {
-                this.reset();
+            synchronized (activePlayers) {
+                if (this.activePlayers.isEmpty()) {
+                    this.reset();
+                }
             }
-            // tu można dodać logikę dla trwającej gry (np. kończenie) - na razie brak
         } else if (state == GameState.INGAME_MAIN_PHASE) {
-            currentCountdown--;
-            for (UUID activePlayer : activePlayers) {
+            countdown();
+            synchronized (activePlayers) {
+                for (UUID activePlayer : activePlayers) {
+                    PlayerRef p = Universe.get().getPlayer(activePlayer);
+                    world.execute(() -> {
+                        if (p != null) {
+                            String tpl = this.config.getTranslation("hungergames.arena.deathmatchIn");
+                            Ref<EntityStore> reference = p.getReference();
+                            Player player = findPlayerInPlayerComponentsBag(store, reference);
+                            updateScoreboardTime(player);
+                            p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                        }
+                    });
 
-                PlayerRef p = Universe.get().getPlayer(activePlayer);
-                p.sendMessage(Message.raw("deathmatch in " + currentCountdown + "s"));
-
+                }
             }
 
             if (currentCountdown <= 0) {
                 currentCountdown = deathmatchArenaSeconds;
                 state = GameState.INGAME_DEATHMATCH_PHASE;
-                for (UUID activePlayer : activePlayers) {
-                    PlayerRef p = Universe.get().getPlayer(activePlayer);
-                    p.sendMessage(Message.raw("Deatchmatch start!"));
-
+                synchronized (activePlayers) {
+                    for (UUID activePlayer : activePlayers) {
+                        PlayerRef p = Universe.get().getPlayer(activePlayer);
+                        if (p != null) {
+                            String tpl = this.config.getTranslation("hungergames.arena.deathmatchStart");
+                            p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                        }
+                    }
                 }
                 teleportPlayersToTheSpawnPoints();
             }
-            if (this.activePlayers.isEmpty()) {
-                this.reset();
+            synchronized (activePlayers) {
+                if (this.activePlayers.isEmpty()) {
+                    this.reset();
+                }
             }
-            // tu można dodać logikę dla trwającej gry (np. kończenie) - na razie brak
         } else {
             if (this.state.equals(GameState.STARTING)) {
-                // jeśli ktoś odpadł poniżej minimalnej liczby, anuluj odliczanie
                 if (playersCount < minimumStartArenaPlayersNumber) {
                     this.state = GameState.WAITING;
                     currentCountdown = startingArenaSeconds;
-                    for (UUID activePlayer : activePlayers) {
-                        PlayerRef p = Universe.get().getPlayer(activePlayer);
-                        p.sendMessage(Message.raw("counting cancelled: not enough players"));
-
+                    synchronized (activePlayers) {
+                        for (UUID activePlayer : activePlayers) {
+                            PlayerRef p = Universe.get().getPlayer(activePlayer);
+                            if (p != null) {
+                                String tpl = this.config.getTranslation("hungergames.arena.countingCancelled");
+                                p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                            }
+                        }
                     }
                     return;
                 }
 
-                // kontynuuj odliczanie
-                currentCountdown--;
-                for (UUID activePlayer : activePlayers) {
-                    PlayerRef p = Universe.get().getPlayer(activePlayer);
-                    p.sendMessage(Message.raw("Start in " + currentCountdown + "s"));
-                }
-
-                if (currentCountdown <= 0) {
-                    // start gry
-                    currentCountdown = ingameArenaSeconds;
-                    state = GameState.INGAME_MAIN_PHASE;
+                countdown();
+                world.execute(()->{
                     for (UUID activePlayer : activePlayers) {
                         PlayerRef p = Universe.get().getPlayer(activePlayer);
-                        p.sendMessage(Message.raw("Arena started!"));
+                        if (p != null) {
+                            String tpl = this.config.getTranslation("hungergames.arena.startIn");
+                            Player player = findPlayerInPlayerComponentsBag(p.getReference().getStore(), p.getReference());
+                            updateScoreboardTime(player);
+                            p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                        }
+                    }
+                });
+
+                if (currentCountdown <= 0) {
+                    currentCountdown = ingameArenaSeconds;
+                    state = GameState.INGAME_MAIN_PHASE;
+                    synchronized (activePlayers) {
+                        for (UUID activePlayer : activePlayers) {
+                            PlayerRef p = Universe.get().getPlayer(activePlayer);
+                            if (p != null) {
+                                String tpl = this.config.getTranslation("hungergames.arena.arenaStarted");
+                                p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                            }
+                        }
                     }
                     teleportPlayersToTheSpawnPoints();
                 }
             } else {
-                // zacznij odliczanie gdy jest wystarczająco graczy
                 if (playersCount >= minimumStartArenaPlayersNumber) {
                     this.state = GameState.STARTING;
                     currentCountdown = startingArenaSeconds;
-                    // powiadom graczy o starcie odliczania
-                    for (UUID activePlayer : activePlayers) {
-                        PlayerRef p = Universe.get().getPlayer(activePlayer);
-                        p.sendMessage(Message.raw("Counting started: game starts in " + currentCountdown + "s"));
+
+                    synchronized (activePlayers) {
+                        world.execute(() -> {
+                            for (UUID activePlayer : activePlayers) {
+                                PlayerRef p = Universe.get().getPlayer(activePlayer);
+                                if (p != null) {
+                                    String tpl = this.config.getTranslation("hungergames.arena.countingStarted");
+                                    Player player = findPlayerInPlayerComponentsBag(p.getReference().getStore(), p.getReference());
+                                    updateScoreboardTime(player);
+                                    p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                                }
+                            }
+                        });
                     }
                 }
             }
         }
 
+    }
+
+    private void updateScoreboardTime(Player player) {
+        CustomUIHud customHud = player.getHudManager().getCustomHud();
+        if (customHud != null) {
+            ((MinigameHud) customHud).setTime(formatHHMMSS(currentCountdown));
+        }
+    }
+
+    private void countdown() {
+        currentCountdown--;
     }
 
     private void reset() {
@@ -257,43 +368,72 @@ public class HgArena {
         return lobbySpawnLocation;
     }
 
-    public void join(Player player) {
-        int capacity = (spawnPoints == null || spawnPoints.isEmpty()) ? 1 : spawnPoints.size();
+    public void join(World playerWorld, UUID uuid) {
+        playerWorld.execute(() -> {
+            try {
+                PlayerRef playerRefFromUUID = Universe.get().getPlayer(uuid);
+                Player player = findPlayerInPlayerComponentsBag(playerRefFromUUID.getReference().getStore(), playerRefFromUUID.getReference());
+                if (player == null) {
+                    return;
+                }
+                int capacity = (spawnPoints == null || spawnPoints.isEmpty()) ? 1 : spawnPoints.size();
 
-        UUID uuid = player.getUuid();
-        if (activePlayers.contains(uuid)) {
-            // gracz już dodany
-            return;
-        }
-        if (activePlayers.size() >= capacity) {
-            player.sendMessage(Message.raw("Arena is full"));
-            return;
-        }
-        player.sendMessage(Message.raw("You joined the arena: " + this.worldName));
-        player.getInventory().clear();
-        player.getInventory().markChanged();
-        activePlayers.add(uuid);
-        preparePlayerJoinedArena(player);
+                if (activePlayers.contains(uuid)) {
+                    // gracz już dodany
+                    return;
+                }
+                if (activePlayers.size() >= capacity) {
+                    String tpl = this.config.getTranslation("hungergames.arena.full");
+                    player.sendMessage(MessageColorUtil.rawStyled(tpl));
+                    return;
+                }
+                activePlayers.add(uuid);
+                PlayerRef playerRef = Universe.get().getPlayer(uuid);
+                Ref<EntityStore> reference = playerRef.getReference();
+                Store<EntityStore> store = reference.getStore();
 
-        player.getWorld().execute(() -> {
-            assert player.getReference() != null;
-            World world = Universe.get().getWorld(this.worldName);
-            addTeleportTask(
-                    player.getReference(),
-                    world,
-                    this.lobbySpawnLocation
-            );
+
+                String tplJoined = this.config.getTranslation("hungergames.arena.joined");
+                player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
+                Inventory inventory = player.getInventory();
+                inventory.clear();
+                inventory.markChanged();
+
+                // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
+                try {
+                    World world = Universe.get().getWorld(this.worldName);
+                    addTeleportTask(reference, world, this.lobbySpawnLocation);
+                } catch (Throwable t) {
+                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
+                }
+            } catch (Throwable outer) {
+                HytaleLogger.getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
+            }
         });
+
     }
-    public void preparePlayerJoinedArena(Player player) {
-        Inventory inventory = player.getInventory();
-        inventory.clear();
-        inventory.setActiveHotbarSlot((byte) 0);
-        ItemContainer hotbar = inventory.getHotbar();
-        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Staff_Mana", 1);
-        hotbar.setItemStackForSlot((short) 0, arenaChooser);
-        player.getInventory().markChanged();
-    }
+
+//    public void preparePlayerJoin(PlayerRef playerRef) {
+//        HytaleLogger logger = HytaleLogger.getLogger();
+//        try {
+//            World world = Universe.get().getWorld(playerRef.getWorldUuid());
+//            Ref<EntityStore> ref = playerRef.getReference();
+//
+//            world.execute(() -> {
+//                try {
+//                    Store<EntityStore> store = ref.getStore();
+//                    HudBuilder.detachedHud()
+//                            .fromHtml(hudArenaInfo)
+//                            .show(playerRef, store);
+//                } catch (Throwable t) {
+//                    logger.atWarning().withCause(t).log("Failed to show HUD: %s", t.getMessage());
+//                }
+//            });
+//        } catch (Throwable t) {
+//            logger.atWarning().withCause(t).log("Error preparing HUD: %s", t.getMessage());
+//        }
+//    }
+
     // pomocnicze API do odczytu liczby aktywnych graczy
     public int getActivePlayerCount() {
         synchronized (activePlayers) {
@@ -306,13 +446,70 @@ public class HgArena {
             World world,
             Vector3d spawnCoordPos
     ) {
-        Store<EntityStore> store = playerRef.getStore();
-        ComponentType<EntityStore, Teleport> componentType = Teleport.getComponentType();
-        Teleport teleport = Teleport.createForPlayer(world, spawnCoordPos, Vector3f.NaN);
-        store.addComponent(playerRef, componentType, teleport);
+        try {
+            Store<EntityStore> store = playerRef.getStore();
+            ComponentType<EntityStore, Teleport> componentType = Teleport.getComponentType();
+            Teleport teleport = Teleport.createForPlayer(world, spawnCoordPos, Vector3f.NaN);
+            // dodanie komponentu może wyrzucić IllegalStateException jeśli ref jest nieważny — obsłużymy to
+            store.addComponent(playerRef, componentType, teleport);
+        } catch (IllegalStateException ise) {
+            HytaleLogger.getLogger().atWarning().withCause(ise).log("Invalid entity reference when adding teleport: %s", ise.getMessage());
+        } catch (Throwable t) {
+            HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to add teleport task: %s", t.getMessage());
+        }
     }
 
     public boolean isIngame() {
         return this.state.equals(GameState.INGAME_DEATHMATCH_PHASE) || this.state.equals(GameState.INGAME_MAIN_PHASE);
     }
+
+    public void teleportToLobby(PlayerRef playerRef) {
+        if (playerRef == null) return;
+        Ref<EntityStore> reference;
+        try {
+            reference = playerRef.getReference();
+            if (reference == null) return;
+            World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+            ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+            Store<EntityStore> store = reference.getStore();
+            if (store == null) return;
+            Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
+            if (spawnPoint == null) return;
+            Vector3d position = spawnPoint.getPosition();
+            try {
+                addTeleportTask(reference, Universe.get().getDefaultWorld(), position);
+            } catch (Throwable t) {
+                HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport to lobby for player %s: %s", playerRef.getUuid(), t.getMessage());
+            }
+        } catch (IllegalStateException ise) {
+            HytaleLogger.getLogger().atWarning().withCause(ise).log("Invalid entity reference in teleportToLobby: %s", ise.getMessage());
+        } catch (Throwable t) {
+            HytaleLogger.getLogger().atWarning().withCause(t).log("Error while teleporting to lobby: %s", t.getMessage());
+        }
+    }
+
+    @NullableDecl
+    private static Player findPlayerInPlayerComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
+        return store.getComponent(refEntityStore, Player.getComponentType());
+    }
+
+    public static String formatHHMMSS(int secs) {
+        if (secs < 3600) {
+            int minutes = secs / 60,
+                    seconds = secs % 60;
+
+            return (minutes < 10 ? "0" : "") + minutes + ":"
+                    + (seconds < 10 ? "0" : "") + seconds;
+        } else {
+            int hours = secs / 3600,
+                    divider = secs % 3600,
+                    minutes = divider / 60,
+                    seconds = divider % 60;
+
+            return (hours < 10 ? "0" : "") + hours + ":"
+                    + (minutes < 10 ? "0" : "") + minutes + ":"
+                    + (seconds < 10 ? "0" : "") + seconds;
+        }
+    }
+
 }

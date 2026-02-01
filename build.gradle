@@ -8,6 +8,8 @@ import org.gradle.internal.os.OperatingSystem
 // Dodane repozytoria, aby można było pobrać zależności testowe (np. JUnit)
 repositories {
     mavenCentral()
+    maven { url 'https://maven.hytale-mods.dev/releases' }
+
 }
 
 ext {
@@ -53,6 +55,7 @@ javadoc {
 // the official launcher for now.
 dependencies {
     implementation fileTree(dir: 'libs', includes: ['*.jar'])
+    implementation("com.buuz135:MultipleHUD:1.0.4")
 
     // Dodaj Hytale server JAR tylko jeśli fizyczny plik istnieje (nie przerywamy builda)
     def serverJar = file("$hytaleHome/install/$patchline/package/game/latest/Server/HytaleServer.jar")
