@@ -28,10 +28,7 @@ import pl.grzegorz2047.hytale.hungergames.commands.hg.HungerGamesCommand;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.events.PlayerInteractMouseEventListener;
 import pl.grzegorz2047.hytale.hungergames.listeners.PlayerListeners;
-import pl.grzegorz2047.hytale.hungergames.systems.BreakBlockListenerSystem;
-import pl.grzegorz2047.hytale.hungergames.systems.DropItemListenerSystem;
-import pl.grzegorz2047.hytale.hungergames.systems.InventoryUseListenerSystem;
-import pl.grzegorz2047.hytale.hungergames.systems.PlaceBlockListenerSystem;
+import pl.grzegorz2047.hytale.hungergames.systems.*;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
@@ -158,6 +155,7 @@ public class HungerGames extends JavaPlugin {
         new PlaceBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new BreakBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new DropItemListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
+        new DeathPlayerListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager));
     }
 

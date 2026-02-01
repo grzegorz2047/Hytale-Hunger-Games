@@ -41,6 +41,7 @@ public class HgArena {
     private final int startingArenaSeconds = 10; // domyślne odliczanie
     private final int ingameArenaSeconds = 30; // domyślne odliczanie
     private int currentCountdown = startingArenaSeconds;
+
     //        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Staff_Mana", 1);
 //        hotbar.setItemStackForSlot((short) 0, arenaChooser);
 //        player.getInventory().markChanged();
@@ -64,6 +65,25 @@ public class HgArena {
         this.config = config;
         this.minimumStartArenaPlayersNumber = config.getMinimumPlayersToStartArena();
         startClockScheduler();
+    }
+
+    public void playerDied(Player playerComponent, Player attackerPlayer) {
+        if (!this.activePlayers.contains(playerComponent.getUuid())) {
+            return;
+        }
+        if (!this.isIngame()) {
+            return;
+        }
+        this.activePlayers.remove(playerComponent.getUuid());
+        if (attackerPlayer != null) {
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has been killed by " + attackerPlayer.getDisplayName() + " !</color>"));
+
+        } else {
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has died!</color>"));
+        }
+        PlayerRef playerRef = playerComponent.getPlayerRef();
+        playerComponent.getHudManager().resetHud(playerRef);
+        teleportToLobby(playerRef);
     }
 
     public int getArenaSize() {
@@ -141,102 +161,96 @@ public class HgArena {
         }
         Store<EntityStore> store = world.getEntityStore().getStore();
 
-        if (state == GameState.INGAME_DEATHMATCH_PHASE) {
-            countdown();
-
-            world.execute(() -> {
-                for (UUID activePlayer : activePlayers) {
-                    PlayerRef p = Universe.get().getPlayer(activePlayer);
-                    if (p == null) {
-                        continue;
-                    }
-                    Ref<EntityStore> reference = p.getReference();
-                    String tpl = this.config.getTranslation("hungergames.arena.gameEndsIn");
-                    Player player = findPlayerInPlayerComponentsBag(store, reference);
-                    if (player == null) {
-                        continue;
-                    }
-                    updateScoreboardTime(player);
-                    p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
-                }
-            });
-
-            if (currentCountdown <= 0) {
-                currentCountdown = deathmatchArenaSeconds;
+        switch (state) {
+            case INGAME_DEATHMATCH_PHASE -> {
+                countdown();
                 world.execute(() -> {
-                    synchronized (activePlayers) {
-                        for (UUID active : new ArrayList<>(activePlayers)) {
-                            PlayerRef p = Universe.get().getPlayer(active);
-                            if (p == null || p.getReference() == null) continue;
-                            Ref<EntityStore> refForTeleport = p.getReference();
-                            // walidacja referencji przed użyciem
-                            try {
-                                World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-                                ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-                                Store<EntityStore> storeLocal = refForTeleport.getStore();
-                                Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
+                    for (UUID activePlayer : activePlayers) {
+                        PlayerRef p = Universe.get().getPlayer(activePlayer);
+                        if (p == null) {
+                            continue;
+                        }
+                        Ref<EntityStore> reference = p.getReference();
+                        String tpl = this.config.getTranslation("hungergames.arena.gameEndsIn");
+                        Player player = findPlayerInPlayerComponentsBag(store, reference);
+                        if (player == null) {
+                            continue;
+                        }
+                        updateScoreboardTime(player);
+                        p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                    }
+                });
 
-                                Vector3d position = spawnPoint.getPosition();
+                if (currentCountdown <= 0) {
+                    currentCountdown = deathmatchArenaSeconds;
+                    world.execute(() -> {
+                        synchronized (activePlayers) {
+                            for (UUID active : new ArrayList<>(activePlayers)) {
+                                PlayerRef p = Universe.get().getPlayer(active);
+                                if (p == null || p.getReference() == null) continue;
+                                Ref<EntityStore> refForTeleport = p.getReference();
+                                // walidacja referencji przed użyciem
                                 try {
-                                    addTeleportTask(refForTeleport, Universe.get().getDefaultWorld(), position);
+                                    World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+                                    ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+                                    Store<EntityStore> storeLocal = refForTeleport.getStore();
+                                    Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
+
+                                    Vector3d position = spawnPoint.getPosition();
+                                    try {
+                                        addTeleportTask(refForTeleport, Universe.get().getDefaultWorld(), position);
+                                    } catch (Throwable t) {
+                                        HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", active, t.getMessage());
+                                    }
+                                    String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
+                                    p.sendMessage(MessageColorUtil.rawStyled(tpl));
                                 } catch (Throwable t) {
-                                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", active, t.getMessage());
+                                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", active, t.getMessage());
                                 }
-                                String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
-                                p.sendMessage(MessageColorUtil.rawStyled(tpl));
-                            } catch (Throwable t) {
-                                HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", active, t.getMessage());
                             }
                         }
-                    }
-                    reset();
-                });
-            }
-            synchronized (activePlayers) {
-                if (this.activePlayers.isEmpty()) {
-                    this.reset();
-                }
-            }
-        } else if (state == GameState.INGAME_MAIN_PHASE) {
-            countdown();
-            synchronized (activePlayers) {
-                for (UUID activePlayer : activePlayers) {
-                    PlayerRef p = Universe.get().getPlayer(activePlayer);
-                    world.execute(() -> {
-                        if (p != null) {
-                            String tpl = this.config.getTranslation("hungergames.arena.deathmatchIn");
-                            Ref<EntityStore> reference = p.getReference();
-                            Player player = findPlayerInPlayerComponentsBag(store, reference);
-                            updateScoreboardTime(player);
-                            p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
-                        }
+                        reset();
                     });
-
+                }
+                synchronized (activePlayers) {
+                    if (this.activePlayers.isEmpty()) {
+                        this.reset();
+                    }
                 }
             }
-
-            if (currentCountdown <= 0) {
-                currentCountdown = deathmatchArenaSeconds;
-                state = GameState.INGAME_DEATHMATCH_PHASE;
+            case INGAME_MAIN_PHASE -> {
+                countdown();
                 synchronized (activePlayers) {
                     for (UUID activePlayer : activePlayers) {
                         PlayerRef p = Universe.get().getPlayer(activePlayer);
-                        if (p != null) {
-                            String tpl = this.config.getTranslation("hungergames.arena.deathmatchStart");
-                            p.sendMessage(MessageColorUtil.rawStyled(tpl));
-                        }
+                        world.execute(() -> {
+                            if (p != null) {
+                                String tpl = this.config.getTranslation("hungergames.arena.deathmatchIn");
+                                Ref<EntityStore> reference = p.getReference();
+                                Player player = findPlayerInPlayerComponentsBag(store, reference);
+                                updateScoreboardTime(player);
+                                p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                            }
+                        });
+
                     }
                 }
-                teleportPlayersToTheSpawnPoints();
-            }
-            synchronized (activePlayers) {
-                if (this.activePlayers.isEmpty()) {
-                    this.reset();
+
+                if (currentCountdown <= 0) {
+                    startIngamePhase(deathmatchArenaSeconds, GameState.INGAME_DEATHMATCH_PHASE, "hungergames.arena.deathmatchStart");
+                }
+                synchronized (activePlayers) {
+                    if (this.activePlayers.isEmpty()) {
+                        this.reset();
+                    }
                 }
             }
-        } else {
-            if (this.state.equals(GameState.STARTING)) {
-                if (playersCount < minimumStartArenaPlayersNumber) {
+            case STARTING -> {
+                countdown();
+                if (currentCountdown <= 0) {
+                    startIngamePhase(ingameArenaSeconds, GameState.INGAME_MAIN_PHASE, "hungergames.arena.arenaStarted");
+                }
+                if (isNotEnoughtPlayers(playersCount)) {
                     this.state = GameState.WAITING;
                     currentCountdown = startingArenaSeconds;
                     synchronized (activePlayers) {
@@ -250,9 +264,7 @@ public class HgArena {
                     }
                     return;
                 }
-
-                countdown();
-                world.execute(()->{
+                world.execute(() -> {
                     for (UUID activePlayer : activePlayers) {
                         PlayerRef p = Universe.get().getPlayer(activePlayer);
                         if (p != null) {
@@ -263,22 +275,8 @@ public class HgArena {
                         }
                     }
                 });
-
-                if (currentCountdown <= 0) {
-                    currentCountdown = ingameArenaSeconds;
-                    state = GameState.INGAME_MAIN_PHASE;
-                    synchronized (activePlayers) {
-                        for (UUID activePlayer : activePlayers) {
-                            PlayerRef p = Universe.get().getPlayer(activePlayer);
-                            if (p != null) {
-                                String tpl = this.config.getTranslation("hungergames.arena.arenaStarted");
-                                p.sendMessage(MessageColorUtil.rawStyled(tpl));
-                            }
-                        }
-                    }
-                    teleportPlayersToTheSpawnPoints();
-                }
-            } else {
+            }
+            case null, default -> {
                 if (playersCount >= minimumStartArenaPlayersNumber) {
                     this.state = GameState.STARTING;
                     currentCountdown = startingArenaSeconds;
@@ -289,7 +287,9 @@ public class HgArena {
                                 PlayerRef p = Universe.get().getPlayer(activePlayer);
                                 if (p != null) {
                                     String tpl = this.config.getTranslation("hungergames.arena.countingStarted");
-                                    Player player = findPlayerInPlayerComponentsBag(p.getReference().getStore(), p.getReference());
+                                    Ref<EntityStore> reference = p.getReference();
+                                    if(reference == null) continue;
+                                    Player player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
                                     updateScoreboardTime(player);
                                     p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                                 }
@@ -302,10 +302,29 @@ public class HgArena {
 
     }
 
+    private void startIngamePhase(int ingameArenaSeconds, GameState ingameMainPhase, String key) {
+        currentCountdown = ingameArenaSeconds;
+        state = ingameMainPhase;
+        synchronized (activePlayers) {
+            for (UUID activePlayer : activePlayers) {
+                PlayerRef p = Universe.get().getPlayer(activePlayer);
+                if (p != null) {
+                    String tpl = this.config.getTranslation(key);
+                    p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                }
+            }
+        }
+        teleportPlayersToTheSpawnPoints();
+    }
+
+    private boolean isNotEnoughtPlayers(int playersCount) {
+        return playersCount < minimumStartArenaPlayersNumber;
+    }
+
     private void updateScoreboardTime(Player player) {
         CustomUIHud customHud = player.getHudManager().getCustomHud();
         if (customHud != null) {
-            ((MinigameHud) customHud).setTime(formatHHMMSS(currentCountdown));
+            ((MinigameHud) customHud).setTimeText("Time: " + formatHHMMSS(currentCountdown));
         }
     }
 

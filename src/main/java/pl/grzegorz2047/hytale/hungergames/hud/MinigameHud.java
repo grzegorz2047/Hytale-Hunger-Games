@@ -8,10 +8,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 
 public class MinigameHud extends CustomUIHud {
-    private static final int CONTAINER_RIGHT = 60;
+    private static final int CONTAINER_RIGHT = 55;
     private final int widthClockArea;
     private final int CONTAINER_HEIGHT = 300;
-    private final int CONTAINER_TOP = 500;
+    private final int CONTAINER_TOP = 300;
     private final boolean backgroundColorEnabled;
     private volatile String time = "Time: 00:00";
     private final int fontSize;
@@ -48,7 +48,7 @@ public class MinigameHud extends CustomUIHud {
         );
     }
 
-    public void setTime(String timeText) {
+    public void setTimeText(String timeText) {
         if (timeText == null || timeText.equals(this.time)) {
             return;
         }

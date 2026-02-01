@@ -373,9 +373,16 @@ public class ArenaManager {
 
                 long chunkIndex = ChunkUtil.indexChunkFromBlock(worldX, worldZ);
 
+                int localZ = z;
+                int localX = x;
                 CompletableFuture<Void> task = world.getChunkAsync(chunkIndex).thenAccept(chunk -> {
                     for (int y = 0; y <= height; y++) {
                         chunk.setBlock(worldX, y, worldZ, blockType);
+                    }
+                    if (Math.abs(localX) == radius || Math.abs(localZ) == radius) {
+                        for (int y = 0; y <= height; y++) {
+                            chunk.setBlock(worldX, y, worldZ, "Furniture_Dungeon_Chest_Epic");
+                        }
                     }
                 });
                 tasks.add(task);
@@ -471,5 +478,13 @@ public class ArenaManager {
 
     public void leaveArena(Player player) {
         this.playerLeft(player.getPlayerRef());
+    }
+
+    public void playerDied(Player deadPlayer, World world, Player attackerPlayer) {
+        this.getArena(world.getName()).playerDied(deadPlayer, attackerPlayer);
+    }
+
+    public void playerDied(Player deadPlayer, World world) {
+        this.getArena(world.getName()).playerDied(deadPlayer, null);
     }
 }

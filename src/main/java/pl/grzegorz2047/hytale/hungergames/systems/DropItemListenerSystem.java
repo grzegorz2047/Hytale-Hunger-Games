@@ -41,6 +41,7 @@ public class DropItemListenerSystem extends EntityEventSystem<EntityStore, DropI
             String tpl2 = arenaManager.getConfig().getTranslation("hungergames.item.cannotDrop");
             player.sendMessage(pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil.rawStyled(tpl2));
             event.setCancelled(true);
+            player.getInventory().markChanged();
         }
 
 
