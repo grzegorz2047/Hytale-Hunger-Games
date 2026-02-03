@@ -39,6 +39,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
 import java.util.concurrent.SubmissionPublisher;
 
+import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
+
 
 /**
  * This class serves as the entrypoint for your plugin. Use the setup method to register into game registries or add
@@ -215,11 +217,6 @@ public class HungerGames extends JavaPlugin {
         this.config.load();
         this.config.save();
         return config;
-    }
-
-    @NullableDecl
-    private static Player findPlayerInPlayerComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
-        return store.getComponent(refEntityStore, Player.getComponentType());
     }
 }
 

@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.spawn.GlobalSpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
@@ -21,6 +22,8 @@ import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
 
+import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
+import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerRefInPlayerRefComponentsBag;
 
 import java.util.logging.Level;
 
@@ -58,9 +61,7 @@ public class PlayerListeners {
         eventBus.registerGlobal(AddPlayerToWorldEvent.class, this::onPlayerWorldEnter);
     }
 
-    private String hudArenaInfo = """
-            <div>HELLO </div>
-            """;
+
 
     private void onPlayerWorldEnter(AddPlayerToWorldEvent addPlayerToWorldEvent) {
         Holder<EntityStore> holder = addPlayerToWorldEvent.getHolder();
@@ -71,7 +72,6 @@ public class PlayerListeners {
         HudManager hudManager = player.getHudManager();
         PlayerRef playerRef = player.getPlayerRef();
         if (playerOnAnyArena) {
-            hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
 //            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
         } else {
 //            hudManager.resetHud(playerRef);
@@ -144,15 +144,5 @@ public class PlayerListeners {
         boolean playerFirstJoin = player.isFirstSpawn();
         arenaManager.preparePlayerJoinedServer(player);
 
-    }
-
-    @NullableDecl
-    public static PlayerRef findPlayerRefInPlayerRefComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
-        return store.getComponent(refEntityStore, PlayerRef.getComponentType());
-    }
-
-    @NullableDecl
-    private static Player findPlayerInPlayerComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
-        return store.getComponent(refEntityStore, Player.getComponentType());
     }
 }

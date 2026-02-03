@@ -24,6 +24,7 @@ import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
+import pl.grzegorz2047.hytale.hungergames.teleport.LobbyTeleporter;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -33,6 +34,8 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 
 public class HgArena {
     private final String worldName;
@@ -92,8 +95,8 @@ public class HgArena {
         addKillFeedEntry(killEntry);
         updateKillFeedForActivePlayers();
         PlayerRef playerRef = playerComponent.getPlayerRef();
-        clearCustomHud(playerRef);
-        teleportToLobby(playerRef);
+        clearCustomHud(playerComponent, playerRef);
+        LobbyTeleporter.teleportToLobby(playerRef);
     }
 
     public int getArenaSize() {
@@ -108,8 +111,6 @@ public class HgArena {
             return;
         }
 
-
-        clearCustomHud(playerRef);
         UUID uuid = playerRef.getUuid();
         activePlayers.remove(uuid);
         String tpl = this.config.getTranslation("hungergames.arena.left");
@@ -118,6 +119,18 @@ public class HgArena {
             String tpl2 = this.config.getTranslation("hungergames.arena.playerLeftBroadcast");
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tpl2 == null ? "" : tpl2.replace("{count}", String.valueOf(activePlayers.size()))));
         }
+        Player player = getPlayer(playerRef);
+        clearCustomHud(player, playerRef);
+    }
+
+    @NullableDecl
+    private static Player getPlayer(PlayerRef playerRef) {
+        Player player = null;
+        Ref<EntityStore> reference = playerRef.getReference();
+        if (reference != null) {
+            player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
+        }
+        return player;
     }
 
     private void broadcastMessageToActivePlayers(Message message) {
@@ -349,6 +362,24 @@ public class HgArena {
         }
     }
 
+    public static String formatHHMMSS(int secs) {
+        if (secs < 3600) {
+            int minutes = secs / 60;
+            int seconds = secs % 60;
+
+            return (minutes < 10 ? "0" : "") + minutes + ":"
+                    + (seconds < 10 ? "0" : "") + seconds;
+        }
+        int hours = secs / 3600;
+        int divider = secs % 3600;
+        int minutes = divider / 60;
+        int seconds = divider % 60;
+
+        return (hours < 10 ? "0" : "") + hours + ":"
+                + (minutes < 10 ? "0" : "") + minutes + ":"
+                + (seconds < 10 ? "0" : "") + seconds;
+    }
+
     private void countdown() {
         currentCountdown--;
     }
@@ -496,6 +527,7 @@ public class HgArena {
 
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             try {
+                player.getHudManager().setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
                 World world = Universe.get().getWorld(this.worldName);
                 addTeleportTask(reference, world, this.lobbySpawnLocation);
             } catch (Throwable t) {
@@ -558,66 +590,8 @@ public class HgArena {
         return this.state.equals(GameState.INGAME_DEATHMATCH_PHASE) || this.state.equals(GameState.INGAME_MAIN_PHASE);
     }
 
-    public void teleportToLobby(PlayerRef playerRef) {
-        if (playerRef == null) return;
-        Ref<EntityStore> reference;
-        try {
-            reference = playerRef.getReference();
-            if (reference == null) return;
-            World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-            ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-            Store<EntityStore> store = reference.getStore();
-            if (store == null) return;
-            Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
-            if (spawnPoint == null) return;
-            Vector3d position = spawnPoint.getPosition();
-            try {
-                addTeleportTask(reference, Universe.get().getDefaultWorld(), position);
-            } catch (Throwable t) {
-                HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport to lobby for player %s: %s", playerRef.getUuid(), t.getMessage());
-            }
-        } catch (IllegalStateException ise) {
-            HytaleLogger.getLogger().atWarning().withCause(ise).log("Invalid entity reference in teleportToLobby: %s", ise.getMessage());
-        } catch (Throwable t) {
-            HytaleLogger.getLogger().atWarning().withCause(t).log("Error while teleporting to lobby: %s", t.getMessage());
-        }
-    }
-
-    @NullableDecl
-    private static Player findPlayerInPlayerComponentsBag(Store<EntityStore> store, Ref<EntityStore> refEntityStore) {
-        return store.getComponent(refEntityStore, Player.getComponentType());
-    }
-
-    public static String formatHHMMSS(int secs) {
-        if (secs < 3600) {
-            int minutes = secs / 60,
-                    seconds = secs % 60;
-
-            return (minutes < 10 ? "0" : "") + minutes + ":"
-                    + (seconds < 10 ? "0" : "") + seconds;
-        } else {
-            int hours = secs / 3600,
-                    divider = secs % 3600,
-                    minutes = divider / 60,
-                    seconds = divider % 60;
-
-            return (hours < 10 ? "0" : "") + hours + ":"
-                    + (minutes < 10 ? "0" : "") + minutes + ":"
-                    + (seconds < 10 ? "0" : "") + seconds;
-        }
-    }
-
-    private void clearCustomHud(PlayerRef playerRef) {
-        if (playerRef == null) {
-            return;
-        }
-        Player player;
-        if (playerRef.getReference() == null) {
-            return;
-        } else {
-            player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
-        }
-        if(player == null) {
+    private void clearCustomHud(Player player, PlayerRef playerRef) {
+        if (playerRef == null || player == null) {
             return;
         }
         try {

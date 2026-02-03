@@ -7,6 +7,7 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
+import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
@@ -16,6 +17,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
+import com.hypixel.hytale.server.core.modules.collision.WorldUtil;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
@@ -443,17 +445,26 @@ public class ArenaManager {
         hotbar.setItemStackForSlot((short) 0, arenaChooser);
 
         player.getInventory().markChanged();
-        World world = player.getWorld();
-        ISpawnProvider spawnProvider = Universe.get().getDefaultWorld().getWorldConfig().getSpawnProvider();
 
-//        world.execute(() -> {
-//            Transform spawnPoint = spawnProvider.getSpawnPoint(world, world.getWorldConfig().getUuid());
-//            Vector3d position = spawnPoint.getPosition();
-//            addTeleportTask(
-//                    player.getReference(),
-//                    world,
-//                    position
-//            );
+//        World defaultWorld = Universe.get().getDefaultWorld();
+//        World playerWorld = player.getWorld();
+//        if (defaultWorld == null || playerWorld == null || player.getReference() == null) {
+//            return;
+//        }
+//        playerWorld.execute(() -> {
+//            try {
+//                ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+//                Ref<EntityStore> ref = player.getReference();
+//                if (ref == null) return;
+//                Store<EntityStore> store = ref.getStore();
+//                Transform spawnPoint = spawnProvider.getSpawnPoint(ref, store);
+//                if (spawnPoint == null) return;
+//                Vector3d position = spawnPoint.getPosition();
+//                addTeleportTask(ref, defaultWorld, position);
+//            } catch (Throwable t) {
+//                HytaleLogger.getLogger().atWarning().withCause(t)
+//                        .log("Failed to teleport player %s to lobby spawn", player.getDisplayName());
+//            }
 //        });
     }
 
