@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 public class HgArena {
     private final String worldName;
-    private final List<Vector3d> spawnPoints;
+    private final List<Vector3d> playerSpawnPoints;
     private final Vector3d lobbySpawnLocation;
     private final int minimumStartArenaPlayersNumber;
     private boolean isArenaEnabled = false;
@@ -41,12 +41,6 @@ public class HgArena {
     private final int startingArenaSeconds = 10; // domyślne odliczanie
     private final int ingameArenaSeconds = 30; // domyślne odliczanie
     private int currentCountdown = startingArenaSeconds;
-
-    //        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Staff_Mana", 1);
-//        hotbar.setItemStackForSlot((short) 0, arenaChooser);
-//        player.getInventory().markChanged();
-    // Prosty, poprawny fragment HUD z unikalnym ID
-
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
 
@@ -58,9 +52,9 @@ public class HgArena {
     private final MainConfig config;
 
 
-    public HgArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation, MainConfig config) {
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config) {
         this.worldName = worldName;
-        this.spawnPoints = spawnPoints;
+        this.playerSpawnPoints = playerSpawnPoints;
         this.lobbySpawnLocation = lobbySpawnLocation;
         this.config = config;
         this.minimumStartArenaPlayersNumber = config.getMinimumPlayersToStartArena();
@@ -87,7 +81,7 @@ public class HgArena {
     }
 
     public int getArenaSize() {
-        return this.spawnPoints.size();
+        return this.playerSpawnPoints.size();
     }
 
     public void playerLeft(PlayerRef playerRef) {
@@ -132,7 +126,7 @@ public class HgArena {
 
         this.state = GameState.INGAME_MAIN_PHASE;
         this.currentCountdown = ingameArenaSeconds;
-        teleportPlayersToTheSpawnPoints();
+        teleportPlayersToTheSpawnPoints(playerSpawnPoints);
         return true;
     }
 
@@ -176,7 +170,7 @@ public class HgArena {
                         if (player == null) {
                             continue;
                         }
-                        updateScoreboardTime(player);
+                        updateScoreboard(player.getHudManager().getCustomHud());
                         p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                     }
                 });
@@ -221,19 +215,21 @@ public class HgArena {
             case INGAME_MAIN_PHASE -> {
                 countdown();
                 synchronized (activePlayers) {
-                    for (UUID activePlayer : activePlayers) {
-                        PlayerRef p = Universe.get().getPlayer(activePlayer);
-                        world.execute(() -> {
+
+                    world.execute(() -> {
+                        for (PlayerRef p : world.getPlayerRefs()) {
                             if (p != null) {
                                 String tpl = this.config.getTranslation("hungergames.arena.deathmatchIn");
                                 Ref<EntityStore> reference = p.getReference();
                                 Player player = findPlayerInPlayerComponentsBag(store, reference);
-                                updateScoreboardTime(player);
+                                updateScoreboard(player.getHudManager().getCustomHud());
                                 p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                             }
-                        });
+                        }
 
-                    }
+                    });
+
+
                 }
 
                 if (currentCountdown <= 0) {
@@ -269,8 +265,12 @@ public class HgArena {
                         PlayerRef p = Universe.get().getPlayer(activePlayer);
                         if (p != null) {
                             String tpl = this.config.getTranslation("hungergames.arena.startIn");
-                            Player player = findPlayerInPlayerComponentsBag(p.getReference().getStore(), p.getReference());
-                            updateScoreboardTime(player);
+                            Ref<EntityStore> reference = p.getReference();
+                            if (reference == null) continue;
+                            Store<EntityStore> activeStore = reference.getStore();
+                            if (activeStore == null) continue;
+                            Player player = findPlayerInPlayerComponentsBag(activeStore, reference);
+                            updateScoreboard(player.getHudManager().getCustomHud());
                             p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                         }
                     }
@@ -288,9 +288,9 @@ public class HgArena {
                                 if (p != null) {
                                     String tpl = this.config.getTranslation("hungergames.arena.countingStarted");
                                     Ref<EntityStore> reference = p.getReference();
-                                    if(reference == null) continue;
+                                    if (reference == null) continue;
                                     Player player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
-                                    updateScoreboardTime(player);
+                                    updateScoreboard(player.getHudManager().getCustomHud());
                                     p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                                 }
                             }
@@ -302,9 +302,9 @@ public class HgArena {
 
     }
 
-    private void startIngamePhase(int ingameArenaSeconds, GameState ingameMainPhase, String key) {
+    private void startIngamePhase(int ingameArenaSeconds, GameState gamePhase, String key) {
         currentCountdown = ingameArenaSeconds;
-        state = ingameMainPhase;
+        state = gamePhase;
         synchronized (activePlayers) {
             for (UUID activePlayer : activePlayers) {
                 PlayerRef p = Universe.get().getPlayer(activePlayer);
@@ -314,17 +314,19 @@ public class HgArena {
                 }
             }
         }
-        teleportPlayersToTheSpawnPoints();
+        teleportPlayersToTheSpawnPoints(playerSpawnPoints);
     }
 
     private boolean isNotEnoughtPlayers(int playersCount) {
         return playersCount < minimumStartArenaPlayersNumber;
     }
 
-    private void updateScoreboardTime(Player player) {
-        CustomUIHud customHud = player.getHudManager().getCustomHud();
+    private void updateScoreboard(CustomUIHud customHud) {
         if (customHud != null) {
-            ((MinigameHud) customHud).setTimeText("Time: " + formatHHMMSS(currentCountdown));
+            MinigameHud customHudMinigame = (MinigameHud) customHud;
+            customHudMinigame.setTimeText("Time: " + formatHHMMSS(currentCountdown));
+            customHudMinigame.setNumOfActivePlayers("Players left: " + this.activePlayers.size());
+            customHudMinigame.setArenaName("Arena: " + this.worldName);
         }
     }
 
@@ -338,7 +340,7 @@ public class HgArena {
         this.currentCountdown = startingArenaSeconds;
     }
 
-    private void teleportPlayersToTheSpawnPoints() {
+    private void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
         // teleportujemy oczekujących graczy do punktów startowych (równomiernie)
         World world = Universe.get().getWorld(this.worldName);
         if (world == null) {
@@ -379,8 +381,8 @@ public class HgArena {
         return worldName;
     }
 
-    public List<Vector3d> getSpawnPoints() {
-        return spawnPoints;
+    public List<Vector3d> getPlayerSpawnPoints() {
+        return playerSpawnPoints;
     }
 
     public Vector3d getLobbySpawnLocation() {
@@ -395,7 +397,7 @@ public class HgArena {
                 if (player == null) {
                     return;
                 }
-                int capacity = (spawnPoints == null || spawnPoints.isEmpty()) ? 1 : spawnPoints.size();
+                int capacity = (playerSpawnPoints == null || playerSpawnPoints.isEmpty()) ? 1 : playerSpawnPoints.size();
 
                 if (activePlayers.contains(uuid)) {
                     // gracz już dodany

@@ -45,7 +45,7 @@ public class SqliteArenaRepository implements ArenaRepository {
 
     @Override
     public void save(HgArena arena) throws Exception {
-        String sp = serializeSpawnPoints(arena.getSpawnPoints());
+        String sp = serializeSpawnPoints(arena.getPlayerSpawnPoints());
         try (Connection conn = DriverManager.getConnection(jdbcUrl)) {
             String sql = "REPLACE INTO arenas (world, active, lobbyX, lobbyY, lobbyZ, spawnpoints) VALUES (?,?,?,?,?,?);";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {

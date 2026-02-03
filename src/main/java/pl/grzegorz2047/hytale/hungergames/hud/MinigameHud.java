@@ -15,6 +15,8 @@ public class MinigameHud extends CustomUIHud {
     private final boolean backgroundColorEnabled;
     private volatile String time = "Time: 00:00";
     private final int fontSize;
+    private String arenaName = "Arena name: None";
+    private String numOfActivePlayers = "Players left: 0";
 
     public MinigameHud(PlayerRef playerRef, int fontSize, int widthClockArea, boolean backgroundColorEnabled) {
         super(playerRef);
@@ -35,15 +37,17 @@ public class MinigameHud extends CustomUIHud {
             groupId = "#SimpleHudObj";
             uiCommandBuilder.remove("#SimpleHudObjWithOpacity");
         }
-        uiCommandBuilder.set("#SimpleHudText.Style.FontSize", this.fontSize);
-        uiCommandBuilder.set("#SimpleHudText.Text", this.time);
+        uiCommandBuilder.set("#ArenaTimer.Style.FontSize", this.fontSize);
+        uiCommandBuilder.set("#ArenaTimer.Text", this.time);
+        uiCommandBuilder.set("#ArenaName.Text", this.arenaName);
+        uiCommandBuilder.set("#ArenaNumberOfPlayers.Text" , this.numOfActivePlayers);
         Anchor data = new Anchor();
         data.setWidth(Value.of(this.widthClockArea));
         data.setHeight(Value.of(CONTAINER_HEIGHT));
         data.setTop(Value.of(CONTAINER_TOP));
         data.setRight(Value.of(CONTAINER_RIGHT));
         uiCommandBuilder.setObject(
-                groupId+ ".Anchor",
+                groupId + ".Anchor",
                 data
         );
     }
@@ -54,7 +58,9 @@ public class MinigameHud extends CustomUIHud {
         }
         this.time = timeText;
         UICommandBuilder builder = new UICommandBuilder();
-        builder.set("#SimpleHudText.Text", this.time);
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
         this.update(false, builder);
     }
 
@@ -88,6 +94,14 @@ public class MinigameHud extends CustomUIHud {
 
     private static int lerp(int start, int end, double t) {
         return (int) Math.round(start + (end - start) * t);
+    }
+
+    public void setArenaName(String arenaName) {
+        this.arenaName = arenaName;
+    }
+
+    public void setNumOfActivePlayers(String numOfActivePlayers) {
+        this.numOfActivePlayers = numOfActivePlayers;
     }
 }
 
