@@ -50,32 +50,40 @@ public class ArenaManager {
     HashMap<String, HgArena> listOfArenas = new HashMap<>();
 
     private final ArenaRepository repository;
+    private final boolean startSchedulerOnArenaCreate;
 
     // Domyślny konstruktor: próbuje użyć SQLite, w razie błędu fallback do in-memory
     public ArenaManager(MainConfig config) {
-        this.config = config;
-        ArenaRepository repo;
-        try {
-            File dataDir = new File("data");
-            if (!dataDir.exists()) dataDir.mkdirs();
-            repo = new SqliteArenaRepository("data/arenas.db", config);
-            repo.initialize();
-        } catch (Throwable t) {
-            System.out.println("Warning: SQLite unavailable, using in-memory repository: " + t.getMessage());
-            repo = new InMemoryRepository();
-        }
-        this.repository = repo;
-        loadFromRepository();
+        this(config, null, true);
     }
 
     // Konstruktor do wstrzyknięcia innego repozytorium (np. zewnętrzne DB lub mock w testach)
     public ArenaManager(MainConfig config, ArenaRepository repository) {
+        this(config, repository, true);
+    }
+
+    // Konstruktor z kontrolą schedulera (np. testy jednostkowe)
+    public ArenaManager(MainConfig config, ArenaRepository repository, boolean startSchedulerOnArenaCreate) {
         this.config = config;
-        this.repository = repository;
-        try {
-            this.repository.initialize();
-        } catch (Throwable ignored) {
+        this.startSchedulerOnArenaCreate = startSchedulerOnArenaCreate;
+        ArenaRepository repo = repository;
+        if (repo == null) {
+            try {
+                File dataDir = new File("data");
+                if (!dataDir.exists()) dataDir.mkdirs();
+                repo = new SqliteArenaRepository("data/arenas.db", config);
+                repo.initialize();
+            } catch (Throwable t) {
+                System.out.println("Warning: SQLite unavailable, using in-memory repository: " + t.getMessage());
+                repo = new InMemoryRepository();
+            }
+        } else {
+            try {
+                repo.initialize();
+            } catch (Throwable ignored) {
+            }
         }
+        this.repository = repo;
         loadFromRepository();
     }
 
@@ -85,7 +93,7 @@ public class ArenaManager {
     }
 
     public boolean createArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation) {
-        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation, this.config);
+        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation, this.config, this.startSchedulerOnArenaCreate);
         this.listOfArenas.put(worldName, arena);
         try {
             repository.save(arena);

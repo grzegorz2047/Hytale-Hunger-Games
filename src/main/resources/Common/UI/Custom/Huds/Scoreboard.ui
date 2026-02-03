@@ -28,6 +28,15 @@ Group #SimpleHudObjWithOpacity {
           Alignment: Start,
         );
     }
+    Label #ArenaKillfeed {
+        Anchor: (Width: 300, Height: 300, Top: 120, Horizontal: 0, Left: 10);
+        Text: "Kill Feed: -";
+        Style: (HorizontalAlignment: Start, VerticalAlignment: Start,
+          FontSize: 18,
+          TextColor: #FFFFFF(0.95),
+          Alignment: Start,
+        );
+    }
 }
 Group #SimpleHudObj {
   Anchor: (Width: 77, Height: 36, Top: 60);
@@ -47,6 +56,15 @@ Group #SimpleHudObj {
       FontSize: 14,
       TextColor: #FFFFFF(0.95),
       Alignment: Center,
+    );
+  }
+  Label #ArenaKillfeed {
+    Anchor: (Width: 300, Height: 200, Top: 30, Horizontal: 0, Left: 10);
+    Text: "Kill Feed: -";
+    Style: (HorizontalAlignment: Start, VerticalAlignment: Start,
+      FontSize: 14,
+      TextColor: #FFFFFF(0.95),
+      Alignment: Start,
     );
   }
 }

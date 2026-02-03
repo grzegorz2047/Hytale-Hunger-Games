@@ -119,7 +119,8 @@ public class HungerGames extends JavaPlugin {
                     if (player == null) {
                         return;
                     }
-                    if (!item.interactionType().equals(InteractionType.Primary)) {
+                    InteractionType interactionType = item.interactionType();
+                    if (!(interactionType.equals(InteractionType.Primary) || interactionType.equals(InteractionType.Secondary))) {
                         return;
                     }
                     if (s.equalsIgnoreCase("Prototype_Tool_Staff_Mana")) {

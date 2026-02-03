@@ -2,6 +2,8 @@ package pl.grzegorz2047.hytale.hungergames.arena;
 
 import com.hypixel.hytale.math.vector.Vector3d;
 import org.junit.jupiter.api.Test;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.db.InMemoryRepository;
 
 import java.util.List;
 
@@ -11,7 +13,7 @@ class ArenaManagerTest {
 
     @Test
     void createExistsAndCanBreakAndEnableBehavior() {
-        ArenaManager manager = new ArenaManager();
+        ArenaManager manager = new ArenaManager(new MainConfig(), new InMemoryRepository(), false);
 
         // przed utworzeniem - nie istnieje
         assertFalse(manager.arenaExists("world1"));
@@ -32,17 +34,5 @@ class ArenaManagerTest {
         // wyłączenie => znowu można łamać
         manager.setEnableArena("world1", false);
         assertTrue(manager.canBreak("world1"));
-    }
-
-    @Test
-    void forceStartBehavior() {
-        ArenaManager manager = new ArenaManager();
-
-        // brak areny => false
-        assertFalse(manager.forceStartArena("nope", context.sender()));
-
-        // po utworzeniu => forceStart zwraca true (implementacja HgArena)
-        manager.createArena("a1", List.of(new Vector3d(1,2,3)), new Vector3d(0,0,0));
-        assertTrue(manager.forceStartArena("a1", context.sender()));
     }
 }

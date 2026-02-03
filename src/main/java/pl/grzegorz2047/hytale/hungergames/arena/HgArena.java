@@ -19,12 +19,15 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -51,15 +54,23 @@ public class HgArena {
     private final List<UUID> activePlayers = new ArrayList<>();
     private ScheduledFuture<?> scheduledTask;
     private final MainConfig config;
+    private static final int KILLFEED_MAX_LINES = 5;
+    private final Deque<String> recentKills = new ArrayDeque<>();
 
 
     public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config) {
+        this(worldName, playerSpawnPoints, lobbySpawnLocation, config, true);
+    }
+
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config, boolean startScheduler) {
         this.worldName = worldName;
         this.playerSpawnPoints = playerSpawnPoints;
         this.lobbySpawnLocation = lobbySpawnLocation;
         this.config = config;
         this.minimumStartArenaPlayersNumber = config.getMinimumPlayersToStartArena();
-        startClockScheduler();
+        if (startScheduler) {
+            startClockScheduler();
+        }
     }
 
     public void playerDied(Player playerComponent, Player attackerPlayer) {
@@ -70,12 +81,16 @@ public class HgArena {
             return;
         }
         this.activePlayers.remove(playerComponent.getUuid());
+        String killEntry;
         if (attackerPlayer != null) {
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has been killed by " + attackerPlayer.getDisplayName() + " !</color>"));
-
+            killEntry = attackerPlayer.getDisplayName() + " killed " + playerComponent.getDisplayName();
         } else {
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has died!</color>"));
+            killEntry = playerComponent.getDisplayName() + " died";
         }
+        addKillFeedEntry(killEntry);
+        updateKillFeedForActivePlayers();
         PlayerRef playerRef = playerComponent.getPlayerRef();
         playerComponent.getHudManager().resetHud(playerRef);
         teleportToLobby(playerRef);
@@ -175,34 +190,7 @@ public class HgArena {
 
                 if (currentCountdown <= 0) {
                     currentCountdown = deathmatchArenaSeconds;
-                    world.execute(() -> {
-                        synchronized (activePlayers) {
-                            for (UUID active : new ArrayList<>(activePlayers)) {
-                                PlayerRef p = Universe.get().getPlayer(active);
-                                if (p == null || p.getReference() == null) continue;
-                                Ref<EntityStore> refForTeleport = p.getReference();
-                                // walidacja referencji przed użyciem
-                                try {
-                                    World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-                                    ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-                                    Store<EntityStore> storeLocal = refForTeleport.getStore();
-                                    Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
-
-                                    Vector3d position = spawnPoint.getPosition();
-                                    try {
-                                        addTeleportTask(refForTeleport, Universe.get().getDefaultWorld(), position);
-                                    } catch (Throwable t) {
-                                        HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", active, t.getMessage());
-                                    }
-                                    String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
-                                    p.sendMessage(MessageColorUtil.rawStyled(tpl));
-                                } catch (Throwable t) {
-                                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", active, t.getMessage());
-                                }
-                            }
-                        }
-                        reset();
-                    });
+                    resetArenaNoWinners(world);
                 }
                 synchronized (activePlayers) {
                     if (this.activePlayers.isEmpty()) {
@@ -226,8 +214,6 @@ public class HgArena {
                         }
 
                     });
-
-
                 }
 
                 if (currentCountdown <= 0) {
@@ -300,6 +286,41 @@ public class HgArena {
 
     }
 
+    private void resetArenaNoWinners(World world) {
+        world.execute(() -> {
+            this.activePlayers.clear();
+            for (Player p : world.getPlayers()) {
+                if (p == null || p.getReference() == null) continue;
+                Ref<EntityStore> refForTeleport = p.getReference();
+                // walidacja referencji przed użyciem
+                try {
+                    World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+                    Vector3d position = getLobbyPosition(defaultWorld, refForTeleport);
+                    try {
+                        addTeleportTask(refForTeleport, defaultWorld, position);
+                    } catch (Throwable t) {
+                        HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", p.getDisplayName(), t.getMessage());
+                    }
+                    String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
+                    p.sendMessage(MessageColorUtil.rawStyled(tpl));
+                } catch (Throwable t) {
+                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s",  p.getDisplayName(), t.getMessage());
+                }
+            }
+        });
+        reset();
+    }
+
+    @NonNullDecl
+    private static Vector3d getLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
+        ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
+        Store<EntityStore> storeLocal = refForTeleport.getStore();
+        Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
+
+        Vector3d position = spawnPoint.getPosition();
+        return position;
+    }
+
     private void startIngamePhase(int ingameArenaSeconds, GameState gamePhase, String key) {
         currentCountdown = ingameArenaSeconds;
         state = gamePhase;
@@ -325,6 +346,7 @@ public class HgArena {
             customHudMinigame.setTimeText("Time: " + formatHHMMSS(currentCountdown));
             customHudMinigame.setNumOfActivePlayers("Players left: " + this.activePlayers.size());
             customHudMinigame.setArenaName("Arena: " + this.worldName);
+            customHudMinigame.setKillFeedText(buildKillFeedText());
         }
     }
 
@@ -334,11 +356,66 @@ public class HgArena {
 
     private void reset() {
         this.activePlayers.clear();
+        this.recentKills.clear();
         this.state = GameState.WAITING;
         this.currentCountdown = startingArenaSeconds;
     }
 
-    private void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
+    private void addKillFeedEntry(String entry) {
+        if (entry == null || entry.isBlank()) {
+            return;
+        }
+        synchronized (recentKills) {
+            recentKills.addFirst(entry);
+            while (recentKills.size() > KILLFEED_MAX_LINES) {
+                recentKills.removeLast();
+            }
+        }
+    }
+
+    private String buildKillFeedText() {
+        StringBuilder sb = new StringBuilder("Kill Feed:");
+        synchronized (recentKills) {
+            if (recentKills.isEmpty()) {
+                return sb.append(" -").toString();
+            }
+            for (String line : recentKills) {
+                sb.append("\n").append(line);
+            }
+        }
+        return sb.toString();
+    }
+
+    private void updateKillFeedForActivePlayers() {
+        World world = Universe.get().getWorld(this.worldName);
+        if (world == null) {
+            return;
+        }
+        List<UUID> snapshot;
+        synchronized (activePlayers) {
+            snapshot = new ArrayList<>(activePlayers);
+        }
+        String killFeedText = buildKillFeedText();
+        world.execute(() -> {
+            Store<EntityStore> store = world.getEntityStore().getStore();
+            for (UUID activePlayer : snapshot) {
+                PlayerRef p = Universe.get().getPlayer(activePlayer);
+                if (p == null || p.getReference() == null) {
+                    continue;
+                }
+                Player player = findPlayerInPlayerComponentsBag(store, p.getReference());
+                if (player == null) {
+                    continue;
+                }
+                CustomUIHud customHud = player.getHudManager().getCustomHud();
+                if (customHud instanceof MinigameHud minigameHud) {
+                    minigameHud.setKillFeedText(killFeedText);
+                }
+            }
+        });
+    }
+
+    protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
         // teleportujemy oczekujących graczy do punktów startowych (równomiernie)
         World world = Universe.get().getWorld(this.worldName);
         if (world == null) {

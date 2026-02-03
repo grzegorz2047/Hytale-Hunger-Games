@@ -1,5 +1,6 @@
 package pl.grzegorz2047.hytale.hungergames.listeners;
 
+import com.buuz135.mhud.MultipleHUD;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -70,10 +71,12 @@ public class PlayerListeners {
             return;
         }
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
+        HudManager hudManager = player.getHudManager();
         if (playerOnAnyArena) {
-            HudManager hudManager = player.getHudManager();
             hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
-//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef));
+//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
+        } else {
+//            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
         }
     }
 
