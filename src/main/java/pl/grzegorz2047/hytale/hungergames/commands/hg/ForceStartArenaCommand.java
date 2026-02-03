@@ -3,6 +3,7 @@ package pl.grzegorz2047.hytale.hungergames.commands.hg;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.CommandSender;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -26,11 +27,18 @@ public class ForceStartArenaCommand extends AbstractCommand {
     @Override
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         String arenaName = arenaNameArg.get(context);
+        CommandSender sender = context.sender();
         if (!arenaManager.arenaExists(arenaName)) {
-            context.sender().sendMessage(Message.raw("Arena with that name does not exist"));
+            sender.sendMessage(Message.raw("Arena with that name does not exist"));
             return null;
         }
-        if (!(context.sender() instanceof Player player)) {
+        if (!(sender instanceof Player player)) {
+            return null;
+        }
+        if(!sender.hasPermission("hungergames.admin")) {
+            sender.sendMessage(
+                    Message.raw("You dont have permission to use this command")
+            );
             return null;
         }
         arenaManager.forceStartArena(arenaName, player);

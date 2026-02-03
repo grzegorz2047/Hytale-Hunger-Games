@@ -6,11 +6,13 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
+import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.GlobalSpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -21,10 +23,12 @@ import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
+import pl.grzegorz2047.hytale.hungergames.teleport.LobbyTeleporter;
 
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerRefInPlayerRefComponentsBag;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 /**
@@ -62,7 +66,6 @@ public class PlayerListeners {
     }
 
 
-
     private void onPlayerWorldEnter(AddPlayerToWorldEvent addPlayerToWorldEvent) {
         Holder<EntityStore> holder = addPlayerToWorldEvent.getHolder();
         World world = addPlayerToWorldEvent.getWorld();
@@ -71,12 +74,8 @@ public class PlayerListeners {
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
         HudManager hudManager = player.getHudManager();
         PlayerRef playerRef = player.getPlayerRef();
-        if (playerOnAnyArena) {
-//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
-        } else {
-//            hudManager.resetHud(playerRef);
-            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, "Welcome on the server"));
-//            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
+        if (!playerOnAnyArena) {
+            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, "Welcome " + playerRef.getUsername() + " to the hunger games server"));
         }
     }
 
@@ -121,8 +120,8 @@ public class PlayerListeners {
      * @param event The player disconnect event
      */
     private void onPlayerDisconnect(PlayerDisconnectEvent event) {
-        String playerName = event.getPlayerRef().getUsername();
-        arenaManager.playerLeft(event.getPlayerRef());
+        PlayerRef playerRef = event.getPlayerRef();
+        arenaManager.playerLeft(playerRef);
     }
 
     private void onPlayerJoin(PlayerReadyEvent event) {
@@ -143,6 +142,10 @@ public class PlayerListeners {
         }
         boolean playerFirstJoin = player.isFirstSpawn();
         arenaManager.preparePlayerJoinedServer(player);
+        if (!arenaManager.isPlayerOnAnyArena(player)) {
+//            world.execute(()
+//                    -> LobbyTeleporter.teleportToLobby(playerRef));
 
+        }
     }
 }

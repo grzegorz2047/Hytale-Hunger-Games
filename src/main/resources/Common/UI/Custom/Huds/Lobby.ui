@@ -1,8 +1,8 @@
 Group #LobbyHud {
-  Anchor: (Width: 300, Height: 40, Top: 60, Right: 55);
+  Anchor: (Width: 300, Height: 40, Top: 60, Right: 80);
   Label #LobbyWelcome {
     Anchor: (Width: 300, Height: 40, Top: 0, Left: 0);
-    Text: "Welcome on the server";
+    Text: "Welcome to the server";
     Style: (HorizontalAlignment: Center, VerticalAlignment: Center,
       FontSize: 24,
       TextColor: #FFFFFF(0.95),

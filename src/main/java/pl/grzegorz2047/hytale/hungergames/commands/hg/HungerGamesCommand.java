@@ -15,7 +15,6 @@ public class HungerGamesCommand extends AbstractCommandCollection {
     public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager) {
         super("hg", "Prints a test message from the " + pluginName + " plugin.");
         this.addAliases("hungergames", "survivalgames", "sg");
-        this.setPermissionGroup(GameMode.Adventure); // Allows the command to be used by anyone, not just OP
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;
 //        this.addSubCommand(new TeleportAllCommand());
@@ -24,5 +23,6 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.addSubCommand(new ForceStartArenaCommand("forcestart", "starts arena now", arenaManager));
         this.addSubCommand(new LeaveArenaCommand("leave", "leaves arena", arenaManager));
         this.addSubCommand(new JoinArenaCommand("join", "enters arena", arenaManager));
+        this.addSubCommand(new LobbyCommand("lobby", "teleports to main world", arenaManager));
     }
 }

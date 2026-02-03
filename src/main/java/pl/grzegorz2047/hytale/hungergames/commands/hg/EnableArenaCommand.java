@@ -32,6 +32,12 @@ public class EnableArenaCommand extends AbstractCommand {
     @Override
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
+        if(!sender.hasPermission("hungergames.admin")) {
+            sender.sendMessage(
+                    Message.raw("You dont have permission to use this command")
+            );
+            return null;
+        }
         String worldName = this.worldNameArg.get(context);
 
         World world = Universe.get().getWorld(worldName);

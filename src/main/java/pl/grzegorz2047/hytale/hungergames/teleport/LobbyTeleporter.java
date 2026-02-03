@@ -31,7 +31,6 @@ public final class LobbyTeleporter {
             World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
             ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
             Store<EntityStore> store = reference.getStore();
-            if (store == null) return;
             Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
             if (spawnPoint == null) return;
             Vector3d position = spawnPoint.getPosition();

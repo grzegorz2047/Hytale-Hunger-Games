@@ -1,5 +1,6 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
+import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
@@ -33,6 +34,12 @@ public class InitArenaCommand extends AbstractCommand {
     @Override
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
+        if(!sender.hasPermission("hungergames.admin")) {
+            sender.sendMessage(
+                    Message.raw("You dont have permission to use this command")
+            );
+            return null;
+        }
         String worldName = this.arenaNameArg.get(context);
 
         int numberOfSpawnPoint = 8;

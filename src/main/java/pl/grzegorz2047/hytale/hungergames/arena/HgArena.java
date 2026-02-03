@@ -119,8 +119,6 @@ public class HgArena {
             String tpl2 = this.config.getTranslation("hungergames.arena.playerLeftBroadcast");
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tpl2 == null ? "" : tpl2.replace("{count}", String.valueOf(activePlayers.size()))));
         }
-        Player player = getPlayer(playerRef);
-        clearCustomHud(player, playerRef);
     }
 
     @NullableDecl
@@ -316,7 +314,7 @@ public class HgArena {
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
                 } catch (Throwable t) {
-                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s",  p.getDisplayName(), t.getMessage());
+                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", p.getDisplayName(), t.getMessage());
                 }
             }
         });
@@ -527,7 +525,7 @@ public class HgArena {
 
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             try {
-                player.getHudManager().setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
+                player.getHudManager().setCustomHud(playerRef, new MinigameHud(playerRef, 24, 300, true));
                 World world = Universe.get().getWorld(this.worldName);
                 addTeleportTask(reference, world, this.lobbySpawnLocation);
             } catch (Throwable t) {
