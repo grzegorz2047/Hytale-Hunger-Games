@@ -37,7 +37,7 @@ public final class LobbyTeleporter {
             addTeleportTask(reference, defaultWorld, position);
         } catch (IllegalStateException ise) {
             HytaleLogger.getLogger().atWarning().withCause(ise)
-                    .log("Invalid entity reference in teleportToLobby: %s", ise.getMessage());
+                    .log( "Invalid entity reference in teleportToLobby: %s"  , ise.getMessage());
         } catch (Throwable t) {
             HytaleLogger.getLogger().atWarning().withCause(t)
                     .log("Error while teleporting to lobby: %s", t.getMessage());

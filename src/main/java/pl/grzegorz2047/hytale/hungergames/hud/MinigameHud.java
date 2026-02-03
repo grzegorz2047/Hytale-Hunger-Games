@@ -72,6 +72,9 @@ public class MinigameHud extends CustomUIHud {
         }
         this.killFeedText = killFeedText;
         UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
         builder.set("#ArenaKillfeed.Text", this.killFeedText);
         this.update(false, builder);
     }
