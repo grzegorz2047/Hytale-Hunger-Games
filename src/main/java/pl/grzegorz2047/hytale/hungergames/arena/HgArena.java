@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -93,13 +94,10 @@ public class HgArena {
         UUID uuid = playerRef.getUuid();
         activePlayers.remove(uuid);
         UUID worldUuid = playerRef.getWorldUuid();
-        World world = Universe.get().getWorld(worldUuid);
-        world.execute(() -> {
-//            Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
-//            HudManager hudManager = player.getHudManager();
-//            hudManager.resetHud(playerRef);
-            teleportToLobby(playerRef);
-        });
+        Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
+        HudManager hudManager = player.getHudManager();
+        hudManager.resetHud(playerRef);
+        teleportToLobby(playerRef);
         String tpl = this.config.getTranslation("hungergames.arena.left");
         playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
         synchronized (activePlayers) {
@@ -390,47 +388,47 @@ public class HgArena {
     }
 
     public void join(World playerWorld, UUID uuid) {
-        playerWorld.execute(() -> {
-            try {
-                PlayerRef playerRefFromUUID = Universe.get().getPlayer(uuid);
-                Player player = findPlayerInPlayerComponentsBag(playerRefFromUUID.getReference().getStore(), playerRefFromUUID.getReference());
-                if (player == null) {
-                    return;
-                }
-                int capacity = (playerSpawnPoints == null || playerSpawnPoints.isEmpty()) ? 1 : playerSpawnPoints.size();
 
-                if (activePlayers.contains(uuid)) {
-                    // gracz już dodany
-                    return;
-                }
-                if (activePlayers.size() >= capacity) {
-                    String tpl = this.config.getTranslation("hungergames.arena.full");
-                    player.sendMessage(MessageColorUtil.rawStyled(tpl));
-                    return;
-                }
-                activePlayers.add(uuid);
-                PlayerRef playerRef = Universe.get().getPlayer(uuid);
-                Ref<EntityStore> reference = playerRef.getReference();
-                Store<EntityStore> store = reference.getStore();
-
-
-                String tplJoined = this.config.getTranslation("hungergames.arena.joined");
-                player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
-                Inventory inventory = player.getInventory();
-                inventory.clear();
-                inventory.markChanged();
-
-                // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
-                try {
-                    World world = Universe.get().getWorld(this.worldName);
-                    addTeleportTask(reference, world, this.lobbySpawnLocation);
-                } catch (Throwable t) {
-                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
-                }
-            } catch (Throwable outer) {
-                HytaleLogger.getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
+        try {
+            PlayerRef playerRefFromUUID = Universe.get().getPlayer(uuid);
+            Player player = findPlayerInPlayerComponentsBag(playerRefFromUUID.getReference().getStore(), playerRefFromUUID.getReference());
+            if (player == null) {
+                return;
             }
-        });
+            int capacity = (playerSpawnPoints == null || playerSpawnPoints.isEmpty()) ? 1 : playerSpawnPoints.size();
+
+            if (activePlayers.contains(uuid)) {
+                // gracz już dodany
+                return;
+            }
+            if (activePlayers.size() >= capacity) {
+                String tpl = this.config.getTranslation("hungergames.arena.full");
+                player.sendMessage(MessageColorUtil.rawStyled(tpl));
+                return;
+            }
+            activePlayers.add(uuid);
+            PlayerRef playerRef = Universe.get().getPlayer(uuid);
+            Ref<EntityStore> reference = playerRef.getReference();
+            Store<EntityStore> store = reference.getStore();
+
+
+            String tplJoined = this.config.getTranslation("hungergames.arena.joined");
+            player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
+            Inventory inventory = player.getInventory();
+            inventory.clear();
+            inventory.markChanged();
+
+            // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
+            try {
+                World world = Universe.get().getWorld(this.worldName);
+                addTeleportTask(reference, world, this.lobbySpawnLocation);
+            } catch (Throwable t) {
+                HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
+            }
+        } catch (Throwable outer) {
+            HytaleLogger.getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
+        }
+
 
     }
 
