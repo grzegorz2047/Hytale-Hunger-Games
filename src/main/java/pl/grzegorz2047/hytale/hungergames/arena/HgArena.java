@@ -92,7 +92,7 @@ public class HgArena {
         addKillFeedEntry(killEntry);
         updateKillFeedForActivePlayers();
         PlayerRef playerRef = playerComponent.getPlayerRef();
-        playerComponent.getHudManager().resetHud(playerRef);
+        clearCustomHud(playerRef);
         teleportToLobby(playerRef);
     }
 
@@ -101,18 +101,17 @@ public class HgArena {
     }
 
     public void playerLeft(PlayerRef playerRef) {
+        if (playerRef == null) {
+            return;
+        }
         if (!activePlayers.contains(playerRef.getUuid())) {
             return;
         }
 
 
+        clearCustomHud(playerRef);
         UUID uuid = playerRef.getUuid();
         activePlayers.remove(uuid);
-        UUID worldUuid = playerRef.getWorldUuid();
-        Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
-        HudManager hudManager = player.getHudManager();
-        hudManager.resetHud(playerRef);
-        teleportToLobby(playerRef);
         String tpl = this.config.getTranslation("hungergames.arena.left");
         playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
         synchronized (activePlayers) {
@@ -605,6 +604,28 @@ public class HgArena {
             return (hours < 10 ? "0" : "") + hours + ":"
                     + (minutes < 10 ? "0" : "") + minutes + ":"
                     + (seconds < 10 ? "0" : "") + seconds;
+        }
+    }
+
+    private void clearCustomHud(PlayerRef playerRef) {
+        if (playerRef == null) {
+            return;
+        }
+        Player player;
+        if (playerRef.getReference() == null) {
+            return;
+        } else {
+            player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
+        }
+        if(player == null) {
+            return;
+        }
+        try {
+            HudManager hudManager = player.getHudManager();
+            hudManager.resetHud(playerRef);
+        } catch (Throwable t) {
+            HytaleLogger.getLogger().atWarning().withCause(t)
+                    .log("Failed to clear custom HUD for player %s", playerRef.getUuid());
         }
     }
 

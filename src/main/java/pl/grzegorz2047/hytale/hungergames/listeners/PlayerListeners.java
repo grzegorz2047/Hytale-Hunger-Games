@@ -19,6 +19,7 @@ import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
+import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
 
 
 import java.util.logging.Level;
@@ -66,16 +67,15 @@ public class PlayerListeners {
         World world = addPlayerToWorldEvent.getWorld();
         Player player = getPlayer(holder);
         if (player == null) return;
-        PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
-        if (playerRef == null) {
-            return;
-        }
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
         HudManager hudManager = player.getHudManager();
+        PlayerRef playerRef = player.getPlayerRef();
         if (playerOnAnyArena) {
             hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
 //            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
         } else {
+//            hudManager.resetHud(playerRef);
+            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, "Welcome on the server"));
 //            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
         }
     }
@@ -89,6 +89,10 @@ public class PlayerListeners {
         Holder<EntityStore> holder = drainPlayerFromWorldEvent.getHolder();
         Player player = getPlayer(holder);
         if (player == null) return;
+        PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
+        if (playerRef != null) {
+            arenaManager.playerLeft(playerRef);
+        }
         Inventory inventory = player.getInventory();
     }
 
