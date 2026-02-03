@@ -389,10 +389,10 @@ public class ArenaManager {
                     for (int y = 0; y <= height; y++) {
                         chunk.setBlock(worldX, y, worldZ, blockType);
                     }
-                    if (Math.abs(localX) == radius || Math.abs(localZ) == radius) {
-                        for (int y = 0; y <= height; y++) {
-                            chunk.setBlock(worldX, y, worldZ, "Furniture_Dungeon_Chest_Epic");
-                        }
+                    // Place chests around the hill perimeter at surface level.
+                    if (Math.abs(distance - radius) <= 0.75) {
+                        int chestY = Math.max(0, height);
+                        chunk.setBlock(worldX, chestY, worldZ, "Furniture_Dungeon_Chest_Epic");
                     }
                 });
                 tasks.add(task);
