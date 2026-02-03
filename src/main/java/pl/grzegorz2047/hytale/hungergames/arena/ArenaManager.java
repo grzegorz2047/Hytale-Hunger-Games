@@ -7,9 +7,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.util.ChunkUtil;
-import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.asset.type.blocktype.config.BlockType;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
@@ -17,14 +17,12 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
-import com.hypixel.hytale.server.core.modules.collision.WorldUtil;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.system.WorldConfigSaveSystem;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
-import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.storage.component.ChunkSavingSystems;
 import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGenProvider;
@@ -240,19 +238,19 @@ public class ArenaManager {
                                             String tpl3 = this.config.getTranslation("server.commands.world.save.savingDone");
                                             String formatted3 = tpl3 == null ? "" : tpl3.replace("{world}", world.getName());
                                             context.sendMessage(MessageColorUtil.rawStyled(formatted3));
-                                             if (!(sender instanceof Player player)) {
-                                                 return;
-                                             }
+                                            if (!(sender instanceof Player player)) {
+                                                return;
+                                            }
 
-                                             player.getWorld().execute(() -> {
-                                                 addTeleportTask(
-                                                         player.getReference(),
-                                                         world,
-                                                         lobbySpawnLocation
-                                                 );
-                                             });
-                                         });
-                                     });
+                                            player.getWorld().execute(() -> {
+                                                addTeleportTask(
+                                                        player.getReference(),
+                                                        world,
+                                                        lobbySpawnLocation
+                                                );
+                                            });
+                                        });
+                                    });
                         })
         ).exceptionally(t -> {
             HytaleLogger.getLogger()
@@ -494,7 +492,6 @@ public class ArenaManager {
     }
 
 
-
     public void leaveArena(Player player) {
         this.playerLeft(player.getPlayerRef());
     }
@@ -505,5 +502,13 @@ public class ArenaManager {
 
     public void playerDied(Player deadPlayer, World world) {
         this.getArena(world.getName()).playerDied(deadPlayer, null);
+    }
+
+    public boolean isBlockOpenedInArena(Vector3i position, String worldName) {
+        return this.getArena(worldName).isBlockOpenedInArena(position);
+    }
+
+    public void addBlockOpenedInArena(Vector3i position, String worldName) {
+        this.getArena(worldName).addBlockOpenedInArena(position);
     }
 }

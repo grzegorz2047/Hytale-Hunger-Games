@@ -7,6 +7,7 @@ import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
+import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -48,6 +49,15 @@ public class HgArena {
     private final int startingArenaSeconds = 10; // domyślne odliczanie
     private final int ingameArenaSeconds = 30; // domyślne odliczanie
     private int currentCountdown = startingArenaSeconds;
+    private List<Vector3i> openedChests = new ArrayList<>();
+
+    public boolean isBlockOpenedInArena(Vector3i position) {
+        return this.openedChests.contains(position);
+    }
+
+    public void addBlockOpenedInArena(Vector3i position) {
+        this.openedChests.add(position);
+    }
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
 
@@ -385,6 +395,7 @@ public class HgArena {
     private void reset() {
         this.activePlayers.clear();
         this.recentKills.clear();
+        this.openedChests.clear();
         this.state = GameState.WAITING;
         this.currentCountdown = startingArenaSeconds;
     }

@@ -56,11 +56,11 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
         if (world == null) {
             return;
         }
-        String name = world.getName();
-        if (!arenaManager.isArenaIngame(name)) {
+        String worldName = world.getName();
+        if (!arenaManager.isArenaIngame(worldName)) {
             return;
         }
-        if (!arenaManager.isPlayerPlayingOnArena(name)) {
+        if (!arenaManager.isPlayerPlayingOnArena(worldName)) {
             return;
         }
         BlockState blockType = world.getState(target.getX(), target.getY(), target.getZ(), true);
@@ -81,7 +81,10 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
                     return;
                 }
                 player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Opened inventory</color>"));
-
+                Vector3i position = blockType.getPosition();
+                if (arenaManager.isBlockOpenedInArena(position, worldName)) {
+                    return;
+                }
                 short chestSize = itemContainerState.getItemContainer().getCapacity();
                 List<Short> slots = shuffleSlots(chestSize);
 
@@ -89,6 +92,7 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
                 boolean chestIsClear = clearContainer.succeeded();
                 if (chestIsClear) {
                     setItemsInChestInRandomizedSlots(itemContainerState, stacks, slots);
+                    arenaManager.addBlockOpenedInArena(position, worldName);
                 } else {
                     useBlockEventPre.setCancelled(true);
                 }
