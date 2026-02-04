@@ -112,9 +112,16 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
     }
 
     private static void setItemsInChestInRandomizedSlots(ItemContainerState itemContainerState, List<ItemStack> stacks, List<Short> slots) {
-        for (int stackElementIndex = 0; stackElementIndex < stacks.size() && stackElementIndex < slots.size(); stackElementIndex++) {
-            short arraySlotNumer = slots.get(stackElementIndex);
-            ItemStack itemStack = stacks.get(stackElementIndex);
+        int maxFill = Math.min(stacks.size(), slots.size());
+        if (maxFill <= 0) {
+            return;
+        }
+        int itemsToPlace = ThreadLocalRandom.current().nextInt(1, maxFill + 1);
+        List<ItemStack> shuffledStacks = new ArrayList<>(stacks);
+        Collections.shuffle(shuffledStacks, ThreadLocalRandom.current());
+        for (int i = 0; i < itemsToPlace; i++) {
+            short arraySlotNumer = slots.get(i);
+            ItemStack itemStack = shuffledStacks.get(i);
             itemContainerState.getItemContainer().setItemStackForSlot(arraySlotNumer, itemStack);
         }
     }

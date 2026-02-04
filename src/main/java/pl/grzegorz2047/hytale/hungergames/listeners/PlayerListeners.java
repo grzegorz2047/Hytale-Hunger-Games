@@ -79,7 +79,7 @@ public class PlayerListeners {
 //            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
         } else {
             String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
-            String formatted = tpl.replaceAll("{username}", playerRef.getUsername());
+            String formatted = tpl.replace("{username}", playerRef.getUsername());
             hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, formatted));
 //            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
         }

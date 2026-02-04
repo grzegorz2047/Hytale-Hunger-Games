@@ -536,7 +536,6 @@ public class HgArena {
             activePlayers.add(uuid);
             PlayerRef playerRef = Universe.get().getPlayer(uuid);
             Ref<EntityStore> reference = playerRef.getReference();
-            Store<EntityStore> store = reference.getStore();
 
 
             String tplJoined = this.config.getTranslation("hungergames.arena.joined");
@@ -548,8 +547,8 @@ public class HgArena {
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             try {
                 player.getHudManager().setCustomHud(playerRef, new MinigameHud(playerRef, 24, 300, true));
-                World world = Universe.get().getWorld(this.worldName);
-                addTeleportTask(reference, world, this.lobbySpawnLocation);
+                World arenaWorld = Universe.get().getWorld(this.worldName);
+                addTeleportTask(reference, arenaWorld, this.lobbySpawnLocation);
             } catch (Throwable t) {
                 HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
             }

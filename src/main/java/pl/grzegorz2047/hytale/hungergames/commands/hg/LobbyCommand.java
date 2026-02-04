@@ -29,6 +29,9 @@ public class LobbyCommand extends AbstractCommand {
         if (!(context.sender() instanceof Player player)) {
             return null;
         }
+        if( arenaManager.isPlayerOnAnyArena(player)) {
+            arenaManager.leaveArena(player);
+        }
         player.getWorld().execute(()-> LobbyTeleporter.teleportToLobby(player.getPlayerRef()));
         return null;
     }
