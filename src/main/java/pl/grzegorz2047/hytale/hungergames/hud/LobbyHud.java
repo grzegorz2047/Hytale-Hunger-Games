@@ -12,7 +12,7 @@ public class LobbyHud extends CustomUIHud {
     public LobbyHud(PlayerRef playerRef, int fontSize, String message) {
         super(playerRef);
         this.fontSize = fontSize;
-        this.message = message == null ? "Welcome " + playerRef.getUsername() + " to the hunger games server" : message;
+        this.message = message == null ? "" : message;
     }
 
     @Override

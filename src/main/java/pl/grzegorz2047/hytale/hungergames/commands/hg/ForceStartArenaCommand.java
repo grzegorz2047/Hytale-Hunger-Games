@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -29,19 +30,19 @@ public class ForceStartArenaCommand extends AbstractCommand {
         String arenaName = arenaNameArg.get(context);
         CommandSender sender = context.sender();
         if (!arenaManager.arenaExists(arenaName)) {
-            sender.sendMessage(Message.raw("Arena with that name does not exist"));
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         if (!(sender instanceof Player player)) {
             return null;
         }
-        if(!sender.hasPermission("hungergames.admin")) {
-            sender.sendMessage(
-                    Message.raw("You dont have permission to use this command")
-            );
+        if (!sender.hasPermission("hungergames.admin")) {
+            String tpl = arenaManager.getConfig().getTranslation("noPermission");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
-        arenaManager.forceStartArena(arenaName, player);
+        player.getWorld().execute(() -> arenaManager.forceStartArena(arenaName, player));
         return null;
     }
 }

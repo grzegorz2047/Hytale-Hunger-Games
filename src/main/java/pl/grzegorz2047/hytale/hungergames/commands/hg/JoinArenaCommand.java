@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -32,7 +33,8 @@ public class JoinArenaCommand extends AbstractCommand {
         }
         String arenaName = this.arenaNameArg.get(context);
         if (arenaManager.isArenaIngame(arenaName)) {
-            player.sendMessage(Message.raw("Arena is already ingame"));
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.alreadyIngame");
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         arenaManager.joinArena(arenaName, player);

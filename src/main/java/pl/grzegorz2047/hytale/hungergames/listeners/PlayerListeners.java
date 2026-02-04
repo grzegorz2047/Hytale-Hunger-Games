@@ -74,8 +74,14 @@ public class PlayerListeners {
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
         HudManager hudManager = player.getHudManager();
         PlayerRef playerRef = player.getPlayerRef();
-        if (!playerOnAnyArena) {
-            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, "Welcome " + playerRef.getUsername() + " to the hunger games server"));
+        if (playerOnAnyArena) {
+            hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
+//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
+        } else {
+            String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
+            String formatted = tpl.replaceAll("{username}", playerRef.getUsername());
+            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, formatted));
+//            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
         }
     }
 

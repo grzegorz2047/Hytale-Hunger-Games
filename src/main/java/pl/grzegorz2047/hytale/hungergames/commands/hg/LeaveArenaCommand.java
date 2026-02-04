@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -28,7 +29,8 @@ public class LeaveArenaCommand extends AbstractCommand {
             return null;
         }
         if (!arenaManager.isPlayerOnAnyArena(player)) {
-            player.sendMessage(Message.raw("There is no arena you are playing on"));
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notPlaying");
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         arenaManager.leaveArena(player);

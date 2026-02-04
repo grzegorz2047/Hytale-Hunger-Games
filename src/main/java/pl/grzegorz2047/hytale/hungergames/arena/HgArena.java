@@ -363,11 +363,34 @@ public class HgArena {
     private void updateScoreboard(CustomUIHud customHud) {
         if (customHud != null) {
             MinigameHud customHudMinigame = (MinigameHud) customHud;
-            customHudMinigame.setTimeText("Time: " + formatHHMMSS(currentCountdown));
-            customHudMinigame.setNumOfActivePlayers("Players left: " + this.activePlayers.size());
-            customHudMinigame.setArenaName("Arena: " + this.worldName);
+            String timeLabel = getTranslationOrDefault("hungergames.hud.time", "Time");
+            String playersLabel = getTranslationOrDefault("hungergames.hud.playersLeft", "Players left");
+            String arenaLabel = getTranslationOrDefault("hungergames.hud.arena", "Arena");
+            customHudMinigame.setTimeText(timeLabel + ": " + formatHHMMSS(currentCountdown));
+            customHudMinigame.setNumOfActivePlayers(playersLabel + ": " + this.activePlayers.size());
+            customHudMinigame.setArenaName(arenaLabel + ": " + this.worldName);
             customHudMinigame.setKillFeedText(buildKillFeedText());
         }
+    }
+
+    private String buildKillFeedText() {
+        String title = getTranslationOrDefault("hungergames.hud.killFeed", "Kill Feed");
+        String emptyValue = getTranslationOrDefault("hungergames.hud.killFeedEmpty", "-");
+        StringBuilder sb = new StringBuilder(title + ":");
+        synchronized (recentKills) {
+            if (recentKills.isEmpty()) {
+                return sb.append(" ").append(emptyValue).toString();
+            }
+            for (String line : recentKills) {
+                sb.append("\n").append(line);
+            }
+        }
+        return sb.toString();
+    }
+
+    private String getTranslationOrDefault(String key, String fallback) {
+        String value = this.config.getTranslation(key);
+        return value == null ? fallback : value;
     }
 
     public static String formatHHMMSS(int secs) {
@@ -412,18 +435,6 @@ public class HgArena {
         }
     }
 
-    private String buildKillFeedText() {
-        StringBuilder sb = new StringBuilder("Kill Feed:");
-        synchronized (recentKills) {
-            if (recentKills.isEmpty()) {
-                return sb.append(" -").toString();
-            }
-            for (String line : recentKills) {
-                sb.append("\n").append(line);
-            }
-        }
-        return sb.toString();
-    }
 
     private void updateKillFeedForActivePlayers() {
         World world = Universe.get().getWorld(this.worldName);

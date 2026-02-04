@@ -12,6 +12,7 @@ import com.hypixel.hytale.server.core.universe.world.WorldConfig;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import javax.annotation.Nonnull;
 import java.util.concurrent.CompletableFuture;
@@ -33,25 +34,24 @@ public class DisableArenaCommand extends AbstractCommand {
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
         if(!sender.hasPermission("hungergames.admin")) {
-            sender.sendMessage(
-                    Message.raw("You dont have permission to use this command")
-            );
+            String tpl = arenaManager.getConfig().getTranslation("noPermission");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         String worldName = this.worldNameArg.get(context);
 
         World world = Universe.get().getWorld(worldName);
         if (world == null || !arenaManager.arenaExists(worldName)) {
-            sender.sendMessage(
-                    Message.raw("Arena doesnt exist")
-            );
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         WorldConfig worldConfig = world.getWorldConfig();
         worldConfig.setCanSaveChunks(true);
         worldConfig.markChanged();
         this.arenaManager.setEnableArena(worldName, false);
-        sender.sendMessage(Message.raw("Arena disabled"));
+        String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.disabled");
+        sender.sendMessage(MessageColorUtil.rawStyled(tpl));
         return null;
     }
 

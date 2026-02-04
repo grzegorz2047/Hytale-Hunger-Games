@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import javax.annotation.Nonnull;
 
@@ -36,7 +37,9 @@ public class DeathPlayerListenerSystem extends DeathSystems.OnDeathSystem {
     public void onComponentAdded(@Nonnull Ref ref, @Nonnull DeathComponent component, @Nonnull Store store, @Nonnull CommandBuffer commandBuffer) {
         Player playerComponent = (Player) store.getComponent(ref, Player.getComponentType());
         assert playerComponent != null;
-        Universe.get().sendMessage(Message.raw("Death player: " + playerComponent.getDisplayName()));
+        String tpl = arenaManager.getConfig().getTranslation("hungergames.death.playerBroadcast");
+        String formatted = tpl == null ? "Death player: " + playerComponent.getDisplayName() : tpl.replace("{player}", playerComponent.getDisplayName());
+        Universe.get().sendMessage(MessageColorUtil.rawStyled(formatted));
         Damage deathInfo = component.getDeathInfo();
         String arenaName = playerComponent.getWorld().getName();
 

@@ -56,14 +56,13 @@ public class HungerGames extends JavaPlugin {
                 <div class="container" data-hyui-title="{{$title}}" style="anchor-height: 800;anchor-width: 900;">
                     <div class="container-contents" style="layout-mode: Top; ">
                         <p id="summary" style="padding: 4;">{{$summary}}</p>
-            aaa
                         <div id="list" style="layout-mode: Top; padding: 6; ">
                             {{#each arenas}}
                             <div class="bounty-card" style="layout-mode: Left; padding: 10;">
                                 <p style="flex-weight: 2;">{{$worldName}}</p>
                                 <p style="flex-weight: 1;">{{$activePlayerCount}}/{{$arenaSize}}</p>
-                                <p style="flex-weight: 1;">ingame: {{$ingame}}</p>
-                                <button value="aaa" data="bbb" id="btn-{{$worldName}}" class="small-tertiary-button">Join</button>
+                                <p style="flex-weight: 1;">{{$ingameLabel}}: {{$ingame}}</p>
+                                <button value="aaa" data="bbb" id="btn-{{$worldName}}" class="small-tertiary-button">{{$joinLabel}}</button>
                             </div>
                             {{/each}}
                         </div>
@@ -163,9 +162,16 @@ public class HungerGames extends JavaPlugin {
     }
 
     private PageBuilder prepareArenaListPage(PlayerRef playerRef, Player player, LinkedList<ArenaStat> arenaStats) {
+        String title = getTranslationOrDefault("hungergames.ui.arenaList.title", "Arena list");
+        String summaryTpl = getTranslationOrDefault("hungergames.ui.arenaList.summary", "Showing {count} arenas");
+        String ingameLabel = getTranslationOrDefault("hungergames.ui.arenaList.ingameLabel", "ingame");
+        String joinLabel = getTranslationOrDefault("hungergames.ui.arenaList.joinLabel", "Join");
+
         TemplateProcessor template = new TemplateProcessor()
-                .setVariable("title", "Arena list")
-                .setVariable("summary", "Showing " + arenaStats.size() + " arenas")
+                .setVariable("title", title)
+                .setVariable("summary", summaryTpl.replace("{count}", String.valueOf(arenaStats.size())))
+                .setVariable("ingameLabel", ingameLabel)
+                .setVariable("joinLabel", joinLabel)
                 .setVariable("arenas", arenaStats);
 
         PageBuilder pageBuilder = PageBuilder.pageForPlayer(playerRef)
@@ -217,6 +223,11 @@ public class HungerGames extends JavaPlugin {
         this.config.load();
         this.config.save();
         return config;
+    }
+
+    private String getTranslationOrDefault(String key, String fallback) {
+        String value = this.config.get().getTranslation(key);
+        return value == null ? fallback : value;
     }
 }
 
