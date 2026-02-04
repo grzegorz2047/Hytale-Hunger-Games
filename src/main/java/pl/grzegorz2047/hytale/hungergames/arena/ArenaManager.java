@@ -105,6 +105,11 @@ public class ArenaManager {
 
     public boolean forceStartArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
+            player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Arena not found</color>"));
+            return false;
+        }
+        if (!this.isArenaEnabled(arenaName)) {
+            player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Arena not enabled</color>"));
             return false;
         }
         HgArena hgArena = getArena(arenaName);
@@ -113,6 +118,10 @@ public class ArenaManager {
         }
         hgArena.join(player.getWorld(), player.getUuid());
         return hgArena.forceStart();
+    }
+
+    private boolean isArenaEnabled(String arenaName) {
+        return this.getArena(arenaName).isActive();
     }
 
     public boolean arenaExists(String worldName) {
@@ -226,6 +235,7 @@ public class ArenaManager {
                             int hillRadius = 10;
                             generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Wood_Blackwood_Ornate"), 10));
                             generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
+                            generationTasks.addAll(generateBoundaryWallTasks(world, 0, 0, 100, 30, BlockType.fromString("Wood_Blackwood_Ornate")));
                             CompletableFuture
                                     .allOf(generationTasks.toArray(new CompletableFuture[0]))
                                     .thenRun(() -> {
@@ -510,5 +520,33 @@ public class ArenaManager {
 
     public void addBlockOpenedInArena(Vector3i position, String worldName) {
         this.getArena(worldName).addBlockOpenedInArena(position);
+    }
+
+    private List<CompletableFuture<Void>> generateBoundaryWallTasks(World world, int centerX, int centerZ, int radius, int height, BlockType blockType) {
+        List<CompletableFuture<Void>> tasks = new ArrayList<>();
+
+        for (int x = -radius; x <= radius; x++) {
+            for (int z = -radius; z <= radius; z++) {
+                if (Math.abs(x) != radius && Math.abs(z) != radius) {
+                    continue;
+                }
+                int worldX = centerX + x;
+                int worldZ = centerZ + z;
+                long chunkIndex = ChunkUtil.indexChunkFromBlock(worldX, worldZ);
+                CompletableFuture<Void> task = world.getChunkAsync(chunkIndex).thenAccept(chunk -> {
+                    for (int y = 0; y <= height; y++) {
+                        chunk.setBlock(worldX, y, worldZ, blockType);
+                    }
+                }).exceptionally(t -> {
+                    HytaleLogger.getLogger()
+                            .at(Level.SEVERE)
+                            .withCause(t)
+                            .log("Error generating arena boundary wall");
+                    return null;
+                });
+                tasks.add(task);
+            }
+        }
+        return tasks;
     }
 }

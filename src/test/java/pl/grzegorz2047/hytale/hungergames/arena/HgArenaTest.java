@@ -18,6 +18,11 @@ class HgArenaTest {
         }
 
         @Override
+        protected void startGame() {
+            // no-op for tests to avoid touching Hytale runtime
+        }
+
+        @Override
         protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
             teleportCalled = true;
         }

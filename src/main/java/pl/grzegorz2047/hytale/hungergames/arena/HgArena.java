@@ -155,12 +155,36 @@ public class HgArena {
     }
 
     public boolean forceStart() {
-        // Wymuszenie startu: natychmiast ustawiamy stan ingame i teleportujemy graczy
 
-        this.state = GameState.INGAME_MAIN_PHASE;
-        this.currentCountdown = ingameArenaSeconds;
+        startGame();
         teleportPlayersToTheSpawnPoints(playerSpawnPoints);
         return true;
+    }
+
+    protected void startGame() {
+        // Wymuszenie startu: natychmiast ustawiamy stan ingame i teleportujemy graczy
+        this.state = GameState.INGAME_MAIN_PHASE;
+        this.currentCountdown = ingameArenaSeconds;
+        World world = getArenaWorld();
+        if (world == null) {
+            return;
+        }
+        for (UUID activePlayer : activePlayers) {
+            PlayerRef p = Universe.get().getPlayer(activePlayer);
+            if (p == null) {
+                continue;
+            }
+            Player player = findPlayerInPlayerComponentsBag(world.getEntityStore().getStore(), p.getReference());
+            Inventory inventory = player.getInventory();
+            inventory.clear();
+            inventory.markChanged();
+        }
+
+    }
+
+    @NullableDecl
+    private World getArenaWorld() {
+        return Universe.get().getWorld(this.worldName);
     }
 
     public void startClockScheduler() {
@@ -437,7 +461,7 @@ public class HgArena {
 
 
     private void updateKillFeedForActivePlayers() {
-        World world = Universe.get().getWorld(this.worldName);
+        World world = getArenaWorld();
         if (world == null) {
             return;
         }
@@ -467,7 +491,7 @@ public class HgArena {
 
     protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
         // teleportujemy oczekujących graczy do punktów startowych (równomiernie)
-        World world = Universe.get().getWorld(this.worldName);
+        World world = getArenaWorld();
         if (world == null) {
             return;
         }
@@ -547,7 +571,7 @@ public class HgArena {
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             try {
                 player.getHudManager().setCustomHud(playerRef, new MinigameHud(playerRef, 24, 300, true));
-                World arenaWorld = Universe.get().getWorld(this.worldName);
+                World arenaWorld = getArenaWorld();
                 addTeleportTask(reference, arenaWorld, this.lobbySpawnLocation);
             } catch (Throwable t) {
                 HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
