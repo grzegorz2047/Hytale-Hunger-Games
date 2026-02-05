@@ -16,17 +16,20 @@ import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 import javax.annotation.Nonnull;
 import java.util.concurrent.CompletableFuture;
 
-public class InitArenaCommand extends AbstractCommand {
+public class GenerateArenaCommand extends AbstractCommand {
 
     @Nonnull
     private final RequiredArg<String> arenaNameArg;
-    private final OptionalArg<Boolean> withWorldArg;
+    private final OptionalArg<Integer> numberOfSpawnPointsArg;
+    private final OptionalArg<Integer> radiusArg;
+//    private final OptionalArg<Boolean> withWorldArg;
     private final ArenaManager arenaManager;
 
-    public InitArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
+    public GenerateArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
         super(name, description);
         this.arenaNameArg = this.withRequiredArg("arenaName", "creates arena", ArgTypes.STRING);
-        this.withWorldArg = this.withOptionalArg("withWorld", "generate also world", ArgTypes.BOOLEAN);
+        this.numberOfSpawnPointsArg = this.withOptionalArg("numberOfSpawnPoints", "number of spawn points", ArgTypes.INTEGER);
+        this.radiusArg = this.withOptionalArg("radius", "radius for spawn points", ArgTypes.INTEGER);
         this.arenaManager = arenaManager;
     }
 
@@ -42,8 +45,11 @@ public class InitArenaCommand extends AbstractCommand {
         }
         String worldName = this.arenaNameArg.get(context);
 
-        int numberOfSpawnPoint = 8;
-        int radius = 25;
+        Integer numberOfSpawnPointArg = this.numberOfSpawnPointsArg.get(context);
+        int numberOfSpawnPoint = numberOfSpawnPointArg != null ? numberOfSpawnPointArg : 8;
+
+        Integer radiusArg = this.radiusArg.get(context);
+        int radius = radiusArg != null ? radiusArg : 25;
 
         if (Universe.get().getWorld(worldName) != null) {
             String tpl = arenaManager.getConfig().getTranslation("server.universe.addWorld.alreadyExists");
@@ -51,16 +57,7 @@ public class InitArenaCommand extends AbstractCommand {
             sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             return null;
         }
-        if (this.withWorldArg.provided(context)) {
-            if (this.withWorldArg.get(context) == true) {
-                arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
-            } else {
-                arenaManager.createArena(worldName, numberOfSpawnPoint);
-
-            }
-        } else {
-            arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
-        }
+        arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
         return null;
     }
 

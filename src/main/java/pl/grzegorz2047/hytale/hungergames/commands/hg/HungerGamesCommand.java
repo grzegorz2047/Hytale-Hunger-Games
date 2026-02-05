@@ -1,6 +1,5 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
-import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 
@@ -19,7 +18,7 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.pluginVersion = pluginVersion;
 //        this.addSubCommand(new TeleportAllCommand());
         this.addSubCommand(new EnableArenaCommand("enable", "enables arena", arenaManager));
-        this.addSubCommand(new InitArenaCommand("init", "creates arena", arenaManager));
+        this.addSubCommand(new GenerateArenaCommand("generate", "creates arena", arenaManager));
         this.addSubCommand(new ForceStartArenaCommand("forcestart", "starts arena now", arenaManager));
         this.addSubCommand(new LeaveArenaCommand("leave", "leaves arena", arenaManager));
         this.addSubCommand(new JoinArenaCommand("join", "enters arena", arenaManager));
