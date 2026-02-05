@@ -20,6 +20,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
@@ -44,11 +45,11 @@ public class HgArena {
     private final Vector3d lobbySpawnLocation;
     private final int minimumStartArenaPlayersNumber;
     private boolean isArenaEnabled = false;
-    private int deathmatchArenaSeconds = 30;
+    private final int deathmatchArenaSeconds;
     // Odliczanie / stan oczekiwania
-    private final int startingArenaSeconds = 10; // domyślne odliczanie
-    private final int ingameArenaSeconds = 30; // domyślne odliczanie
-    private int currentCountdown = startingArenaSeconds;
+    private final int startingArenaSeconds;
+    private final int ingameArenaSeconds;
+    private int currentCountdown;
     private List<Vector3i> openedChests = new ArrayList<>();
 
     public boolean isBlockOpenedInArena(Vector3i position) {
@@ -80,7 +81,13 @@ public class HgArena {
         this.playerSpawnPoints = playerSpawnPoints;
         this.lobbySpawnLocation = lobbySpawnLocation;
         this.config = config;
+
+;
         this.minimumStartArenaPlayersNumber = config.getMinimumPlayersToStartArena();
+        this.deathmatchArenaSeconds = config.getDeathmatchArenaSeconds();
+        this.startingArenaSeconds = config.getStartingArenaSeconds();
+        this.ingameArenaSeconds = config.getIngameArenaSeconds();
+        this.currentCountdown = startingArenaSeconds;
         if (startScheduler) {
             startClockScheduler();
         }
@@ -368,11 +375,11 @@ public class HgArena {
     private void startIngamePhase(int ingameArenaSeconds, GameState gamePhase, String key) {
         currentCountdown = ingameArenaSeconds;
         state = gamePhase;
+        String tpl = this.config.getTranslation(key);
         synchronized (activePlayers) {
             for (UUID activePlayer : activePlayers) {
                 PlayerRef p = Universe.get().getPlayer(activePlayer);
                 if (p != null) {
-                    String tpl = this.config.getTranslation(key);
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
                 }
             }

@@ -80,13 +80,14 @@ public class HungerGames extends JavaPlugin {
     @NullableDecl
     @Override
     public CompletableFuture<Void> preLoad() {
-        this.config = loadConfig();
+        config = loadConfig();
         return super.preLoad();
     }
 
     @Override
     protected void setup() {
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
+        config.get();
         this.arenaManager = new ArenaManager(config.get());
         PlayerInteractLib playerInteractLib = (PlayerInteractLib) PluginManager.get().getPlugin(PluginIdentifier.fromString("Hytale:PlayerInteractLib"));
 
@@ -220,13 +221,13 @@ public class HungerGames extends JavaPlugin {
 
     private Config<MainConfig> loadConfig() {
         config = this.withConfig("HungerGames", MainConfig.CODEC);
-        this.config.load();
-        this.config.save();
+        config.load();
+        config.save();
         return config;
     }
 
     private String getTranslationOrDefault(String key, String fallback) {
-        String value = this.config.get().getTranslation(key);
+        String value = config.get().getTranslation(key);
         return value == null ? fallback : value;
     }
 }

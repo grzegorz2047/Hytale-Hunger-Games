@@ -14,6 +14,9 @@ public class MainConfig {
     private String[] itemsToFillChest = new String[]{"Armor_Iron_Chest:1", "Weapon_Sword_Frost:1", "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
     private HashMap<String, String> messages = new HashMap<>();
     private int minimumPlayersToStartArena = 2;
+    private int deathmatchArenaSeconds = 30;
+    private int startingArenaSeconds = 10;
+    private int ingameArenaSeconds = 30;
     private final String[] messagesConfigArray = new String[]
             {
                     "noPermission:You do not have permission to perform this action.",
@@ -82,6 +85,9 @@ public class MainConfig {
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
             .append(new KeyedCodec<>("MinimumPlayersToStartArena", Codec.INTEGER), (config, f) -> config.minimumPlayersToStartArena = f, (config) -> config.minimumPlayersToStartArena).addValidator(Validators.nonNull()).documentation("minimumPlayersToStartArena").add()
+            .append(new KeyedCodec<>("DeathmatchArenaSeconds", Codec.INTEGER), (config, f) -> config.deathmatchArenaSeconds = f, (config) -> config.deathmatchArenaSeconds).addValidator(Validators.nonNull()).documentation("deathmatchArenaSeconds").add()
+            .append(new KeyedCodec<>("StartingArenaSeconds", Codec.INTEGER), (config, f) -> config.startingArenaSeconds = f, (config) -> config.startingArenaSeconds).addValidator(Validators.nonNull()).documentation("startingArenaSeconds").add()
+            .append(new KeyedCodec<>("IngameArenaSeconds", Codec.INTEGER), (config, f) -> config.ingameArenaSeconds = f, (config) -> config.ingameArenaSeconds).addValidator(Validators.nonNull()).documentation("ingameArenaSeconds").add()
             .append(new KeyedCodec<>("Messages", Codec.STRING_ARRAY), (config, f) -> config.messages = parseMessages(f), (config) -> config.messagesConfigArray).addValidator(Validators.nonNull()).documentation("messages").add()
             .append(new KeyedCodec<>("ItemsToFillChest", Codec.STRING_ARRAY), (config, f) -> config.itemsToFillChest = f, (config) -> config.itemsToFillChest).addValidator(Validators.nonNull()).documentation("worldsWithClockEnabled").add()
             .build();
@@ -99,5 +105,17 @@ public class MainConfig {
 
     public int getMinimumPlayersToStartArena() {
         return minimumPlayersToStartArena;
+    }
+
+    public int getDeathmatchArenaSeconds() {
+        return deathmatchArenaSeconds;
+    }
+
+    public int getStartingArenaSeconds() {
+        return startingArenaSeconds;
+    }
+
+    public int getIngameArenaSeconds() {
+        return ingameArenaSeconds;
     }
 }
