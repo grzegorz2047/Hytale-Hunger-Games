@@ -1,7 +1,6 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
 import com.hypixel.hytale.protocol.GameMode;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
@@ -37,7 +36,7 @@ public class JoinArenaCommand extends AbstractCommand {
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
-        arenaManager.joinArena(arenaName, player);
+        player.getWorld().execute(() -> arenaManager.joinArena(arenaName, player));
         return null;
     }
 }

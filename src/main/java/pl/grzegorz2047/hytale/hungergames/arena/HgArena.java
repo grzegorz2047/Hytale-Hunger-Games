@@ -20,7 +20,6 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
-import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
@@ -42,7 +41,7 @@ import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findP
 public class HgArena {
     private final String worldName;
     private final List<Vector3d> playerSpawnPoints;
-    private final Vector3d lobbySpawnLocation;
+    private Vector3d lobbySpawnLocation;
     private final int minimumStartArenaPlayersNumber;
     private boolean isArenaEnabled = false;
     private final int deathmatchArenaSeconds;
@@ -541,15 +540,36 @@ public class HgArena {
         return playerSpawnPoints;
     }
 
+    public void addSpawnPoint(Vector3d spawnPoint) {
+        if (spawnPoint != null) {
+            this.playerSpawnPoints.add(spawnPoint);
+        }
+    }
+
+    public void clearSpawnPoints() {
+        this.playerSpawnPoints.clear();
+    }
+
+    public void setLobbySpawnLocation(Vector3d lobbySpawnLocation) {
+        if (lobbySpawnLocation != null) {
+            // Create a new Vector3d to avoid external modifications
+            this.lobbySpawnLocation = new Vector3d(lobbySpawnLocation.x, lobbySpawnLocation.y, lobbySpawnLocation.z);
+        }
+    }
+
     public Vector3d getLobbySpawnLocation() {
-        return lobbySpawnLocation;
+        return this.lobbySpawnLocation;
+    }
+
+    public List<Vector3d> getSpawnPoints() {
+        return new ArrayList<>(this.playerSpawnPoints);
     }
 
     public void join(World playerWorld, UUID uuid) {
 
         try {
             PlayerRef playerRefFromUUID = Universe.get().getPlayer(uuid);
-            Player player = findPlayerInPlayerComponentsBag(playerRefFromUUID.getReference().getStore(), playerRefFromUUID.getReference());
+            Player player = findPlayerInPlayerComponentsBag(playerWorld.getEntityStore().getStore(), playerRefFromUUID.getReference());
             if (player == null) {
                 return;
             }

@@ -74,7 +74,11 @@ public class MainConfig {
             };
 
     public String getTranslation(String key) {
-        return messages.get(key);
+        String s = messages.get(key);
+        if(s == null) {
+            return key;
+        }
+        return s;
     }
 
     public ItemStack[] getItemsToFillChest() {

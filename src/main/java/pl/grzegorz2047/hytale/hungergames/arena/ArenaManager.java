@@ -120,7 +120,7 @@ public class ArenaManager {
         return hgArena.forceStart();
     }
 
-    private boolean isArenaEnabled(String arenaName) {
+    public boolean isArenaEnabled(String arenaName) {
         return this.getArena(arenaName).isActive();
     }
 
@@ -153,6 +153,57 @@ public class ArenaManager {
         } catch (Throwable t) {
             System.out.println("Warning: failed to persist arena state " + worldName + " : " + t.getMessage());
         }
+    }
+
+    public void addSpawnPointToArena(String worldName, Vector3d spawnPoint) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return;
+        arena.addSpawnPoint(spawnPoint);
+        try {
+            repository.save(arena);
+        } catch (Throwable t) {
+            System.out.println("Warning: failed to persist arena spawn points for " + worldName + " : " + t.getMessage());
+        }
+    }
+
+    public void clearSpawnPointsInArena(String worldName) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return;
+        arena.clearSpawnPoints();
+        try {
+            repository.save(arena);
+        } catch (Throwable t) {
+            System.out.println("Warning: failed to persist arena spawn points for " + worldName + " : " + t.getMessage());
+        }
+    }
+
+    public void setLobbySpawnLocation(String worldName, Vector3d lobbyLocation) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return;
+        arena.setLobbySpawnLocation(lobbyLocation);
+        try {
+            repository.save(arena);
+        } catch (Throwable t) {
+            System.out.println("Warning: failed to persist arena lobby location for " + worldName + " : " + t.getMessage());
+        }
+    }
+
+    public Vector3d getLobbySpawnLocation(String worldName) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return null;
+        return arena.getLobbySpawnLocation();
+    }
+
+    public List<Vector3d> getSpawnPoints(String worldName) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return new ArrayList<>();
+        return arena.getSpawnPoints();
+    }
+
+    public int getSpawnPointCount(String worldName) {
+        HgArena arena = this.getArena(worldName);
+        if (arena == null) return 0;
+        return arena.getArenaSize();
     }
 
     // Ładowanie wszystkich aren z repozytorium
@@ -549,4 +600,6 @@ public class ArenaManager {
         }
         return tasks;
     }
+
+
 }
