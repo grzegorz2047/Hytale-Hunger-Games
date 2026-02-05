@@ -17,6 +17,19 @@ public class MainConfig {
     private int deathmatchArenaSeconds = 30;
     private int startingArenaSeconds = 10;
     private int ingameArenaSeconds = 30;
+
+    public MainConfig() {
+        this.messages = parseMessages(messagesConfigArray);
+    }
+
+    public String[] getMessagesConfigArray() {
+        return messagesConfigArray;
+    }
+
+    public HashMap<String, String> getMessages() {
+        return messages;
+    }
+
     private final String[] messagesConfigArray = new String[]
             {
                     "noPermission:You do not have permission to perform this action.",

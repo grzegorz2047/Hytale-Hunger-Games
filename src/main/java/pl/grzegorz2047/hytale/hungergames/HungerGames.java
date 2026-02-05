@@ -33,6 +33,8 @@ import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -87,7 +89,6 @@ public class HungerGames extends JavaPlugin {
     @Override
     protected void setup() {
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
-        config.get();
         this.arenaManager = new ArenaManager(config.get());
         PlayerInteractLib playerInteractLib = (PlayerInteractLib) PluginManager.get().getPlugin(PluginIdentifier.fromString("Hytale:PlayerInteractLib"));
 
