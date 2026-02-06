@@ -102,10 +102,22 @@ public class MinigameHud extends CustomUIHud {
 
     public void setArenaName(String arenaName) {
         this.arenaName = arenaName;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
+        builder.set("#PlayerKills.Text", this.playerKills);
+        this.update(false, builder);
     }
 
     public void setNumOfActivePlayers(String numOfActivePlayers) {
         this.numOfActivePlayers = numOfActivePlayers;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
+        builder.set("#PlayerKills.Text", this.playerKills);
+        this.update(false, builder);
     }
 
     public void setPlayerKills(String playerKills) {

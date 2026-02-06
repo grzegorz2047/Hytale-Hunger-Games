@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import javax.annotation.Nonnull;
@@ -23,11 +24,17 @@ public class SetLobbyCommand extends AbstractCommand {
     @Nonnull
     private final RequiredArg<String> arenaNameArg;
     private final ArenaManager arenaManager;
+    private final MainConfig mainConfig;
 
     public SetLobbyCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
+        this(name, description, arenaManager, null);
+    }
+
+    public SetLobbyCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager, MainConfig mainConfig) {
         super(name, description);
         this.arenaNameArg = this.withRequiredArg("arenaName", "arena name to set lobby for", ArgTypes.STRING);
         this.arenaManager = arenaManager;
+        this.mainConfig = mainConfig;
     }
 
     @NullableDecl
@@ -42,19 +49,22 @@ public class SetLobbyCommand extends AbstractCommand {
         }
 
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Message.raw("This command can only be used by a player"));
+            String tpl = mainConfig != null ? mainConfig.getTranslation("hungergames.command.onlyForPlayer") : "This command can only be used by a player";
+            sender.sendMessage(Message.raw(tpl));
             return null;
         }
 
         String arenaName = this.arenaNameArg.get(context);
 
         if (!arenaManager.arenaExists(arenaName)) {
-            sender.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Arena '" + arenaName + "' does not exist</color>"));
+            String tpl = mainConfig != null ? mainConfig.getTranslation("hungergames.command.arenaDoesNotExist") : "Arena '" + arenaName + "' does not exist";
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl.replace("{arenaName}", arenaName)));
             return null;
         }
 
         if (arenaManager.isArenaEnabled(arenaName)) {
-            sender.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Cannot modify arena while it is active or in game</color>"));
+            String tpl = mainConfig != null ? mainConfig.getTranslation("hungergames.command.cannotModifyActiveArena") : "Cannot modify arena while it is active or in game";
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
 

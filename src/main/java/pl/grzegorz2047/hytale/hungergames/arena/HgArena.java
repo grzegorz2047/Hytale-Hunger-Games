@@ -447,7 +447,7 @@ public class HgArena {
      * Aktualizuje HUD gracza z jego bieżącą liczbą zabójstw
      */
     private void updateScoreboardForPlayer(CustomUIHud customHud, UUID playerUuid) {
-        if (customHud != null && customHud instanceof MinigameHud customHudMinigame) {
+        if (customHud instanceof MinigameHud customHudMinigame) {
             // Pobierz gracza aby uzyskać jego liczbę zabójstw
             HgPlayer hgPlayer = findHgPlayerByUuid(playerUuid);
             String playerKillsLabel = getTranslationOrDefault("hungergames.hud.yourKills", "Your Kills");
@@ -691,16 +691,17 @@ public class HgArena {
 
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             boolean isHudEnabled = this.config.isHudEnabled();
+            World arenaWorld = getArenaWorld();
+
             if(isHudEnabled) {
                 MinigameHud hud = new MinigameHud(playerRef, 24, 300, true);
+                player.getHudManager().setCustomHud(playerRef, hud);
                 hud.setArenaName(this.worldName);
                 hud.setNumOfActivePlayers("");
-                player.getHudManager().setCustomHud(playerRef, hud);
             }
 
             try {
 
-                World arenaWorld = getArenaWorld();
                 addTeleportTask(reference, arenaWorld, this.lobbySpawnLocation);
             } catch (Throwable t) {
                 HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());

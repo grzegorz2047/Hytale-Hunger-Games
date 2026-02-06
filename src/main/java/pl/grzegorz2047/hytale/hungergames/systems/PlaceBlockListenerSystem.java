@@ -11,17 +11,24 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 public class PlaceBlockListenerSystem extends EntityEventSystem<EntityStore, PlaceBlockEvent> {
 
     private final HungerGames plugin;
     private final ArenaManager arenaManager;
+    private final MainConfig mainConfig;
 
     public PlaceBlockListenerSystem(HungerGames plugin, ArenaManager arenaManager) {
+        this(plugin, arenaManager, null);
+    }
+
+    public PlaceBlockListenerSystem(HungerGames plugin, ArenaManager arenaManager, MainConfig mainConfig) {
         super(PlaceBlockEvent.class);
         this.plugin = plugin;
         this.arenaManager = arenaManager;
+        this.mainConfig = mainConfig;
     }
 
     @Override
@@ -37,7 +44,8 @@ public class PlaceBlockListenerSystem extends EntityEventSystem<EntityStore, Pla
         if (world == null) return;
 
         if (!this.arenaManager.canBreak(world.getName())) {
-            player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>You cannot place it</color>"));
+            String tpl = mainConfig != null ? mainConfig.getTranslation("hungergames.block.cannotPlace") : "You cannot place it";
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
             event.setCancelled(true);
             return;
         }

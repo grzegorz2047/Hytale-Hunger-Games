@@ -13,10 +13,10 @@ Group #LobbyHud {
     Label #LobbyStats {
         Anchor: (Width: 400, Height: 40, Top: 90, Left: 0);
         Text: "";
-        Style: (Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center,
+        Style: (Wrap: true, HorizontalAlignment: Start, VerticalAlignment: Start,
           FontSize: 18,
           TextColor: #FFD700(0.9),
-          Alignment: Center,
+          Alignment: Left,
         );
     }
 }

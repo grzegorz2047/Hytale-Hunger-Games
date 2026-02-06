@@ -156,11 +156,11 @@ public class HungerGames extends JavaPlugin {
         new PlayerListeners(this, arenaManager, config).register(getEventRegistry());
         new PlayerInteractMouseEventListener(this).register(getEventRegistry());
         new InventoryUseListenerSystem(this, arenaManager, config.get()).register(getEntityStoreRegistry());
-        new PlaceBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
+        new PlaceBlockListenerSystem(this, arenaManager, config.get()).register(getEntityStoreRegistry());
         new BreakBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new DropItemListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new DeathPlayerListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
-        this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager));
+        this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager, config.get()));
     }
 
     private PageBuilder prepareArenaListPage(PlayerRef playerRef, Player player, LinkedList<ArenaStat> arenaStats) {
