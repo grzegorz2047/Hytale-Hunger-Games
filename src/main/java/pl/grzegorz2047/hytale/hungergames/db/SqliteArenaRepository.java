@@ -63,6 +63,11 @@ public class SqliteArenaRepository implements ArenaRepository {
 
     @Override
     public Map<String, HgArena> loadAll() throws Exception {
+        return loadAll(null);
+    }
+
+    @Override
+    public Map<String, HgArena> loadAll(PlayerRepository playerRepository) throws Exception {
         Map<String, HgArena> result = new HashMap<>();
         try (Connection conn = DriverManager.getConnection(jdbcUrl)) {
             String sql = "SELECT world, active, lobbyX, lobbyY, lobbyZ, spawnpoints FROM arenas;";
@@ -76,7 +81,7 @@ public class SqliteArenaRepository implements ArenaRepository {
                     int lz = rs.getInt("lobbyZ");
                     String sp = rs.getString("spawnpoints");
                     List<Vector3d> spawnPoints = deserializeSpawnPoints(sp);
-                    HgArena arena = new HgArena(world, spawnPoints, new Vector3d(lx, ly, lz), config);
+                    HgArena arena = new HgArena(world, spawnPoints, new Vector3d(lx, ly, lz), config, playerRepository);
                     arena.setActive(active == 1);
                     result.put(world, arena);
                 }

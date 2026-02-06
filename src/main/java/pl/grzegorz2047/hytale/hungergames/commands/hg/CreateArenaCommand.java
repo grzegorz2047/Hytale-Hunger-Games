@@ -7,7 +7,6 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
-import com.hypixel.hytale.server.core.command.system.arguments.system.OptionalArg;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -29,16 +28,11 @@ public class CreateArenaCommand extends AbstractCommand {
 
     @Nonnull
     private final RequiredArg<String> arenaNameArg;
-    private final OptionalArg<Integer> numberOfSpawnPointsArg;
-    private final OptionalArg<Integer> radiusArg;
-    //    private final OptionalArg<Boolean> withWorldArg;
     private final ArenaManager arenaManager;
 
     public CreateArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
         super(name, description);
         this.arenaNameArg = this.withRequiredArg("arenaName", "creates arena", ArgTypes.STRING);
-        this.numberOfSpawnPointsArg = this.withOptionalArg("numberOfSpawnPoints", "number of spawn points", ArgTypes.INTEGER);
-        this.radiusArg = this.withOptionalArg("radius", "radius for spawn points", ArgTypes.INTEGER);
         this.arenaManager = arenaManager;
     }
 

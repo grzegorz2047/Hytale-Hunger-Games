@@ -17,7 +17,8 @@ public class MinigameHud extends CustomUIHud {
     private final int fontSize;
     private String arenaName = "Arena name: None";
     private String numOfActivePlayers = "Players left: 0";
-    private String killFeedText = "Kill Feed: -";
+    private String killFeedText = "Kills: 0";
+    private String playerKills = "Your Kills: 0";
 
     public MinigameHud(PlayerRef playerRef, int fontSize, int widthClockArea, boolean backgroundColorEnabled) {
         super(playerRef);
@@ -42,7 +43,7 @@ public class MinigameHud extends CustomUIHud {
         uiCommandBuilder.set("#ArenaTimer.Text", this.time);
         uiCommandBuilder.set("#ArenaName.Text", this.arenaName);
         uiCommandBuilder.set("#ArenaNumberOfPlayers.Text" , this.numOfActivePlayers);
-        uiCommandBuilder.set("#ArenaKillfeed.Text", this.killFeedText);
+        uiCommandBuilder.set("#PlayerKills.Text", this.playerKills);
         Anchor data = new Anchor();
         data.setWidth(Value.of(this.widthClockArea));
         data.setHeight(Value.of(CONTAINER_HEIGHT));
@@ -63,19 +64,7 @@ public class MinigameHud extends CustomUIHud {
         builder.set("#ArenaName.Text", this.arenaName);
         builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         builder.set("#ArenaTimer.Text", this.time);
-        this.update(false, builder);
-    }
-
-    public void setKillFeedText(String killFeedText) {
-        if (killFeedText == null || killFeedText.equals(this.killFeedText)) {
-            return;
-        }
-        this.killFeedText = killFeedText;
-        UICommandBuilder builder = new UICommandBuilder();
-        builder.set("#ArenaName.Text", this.arenaName);
-        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
-        builder.set("#ArenaTimer.Text", this.time);
-        builder.set("#ArenaKillfeed.Text", this.killFeedText);
+        builder.set("#PlayerKills.Text", this.playerKills);
         this.update(false, builder);
     }
 
@@ -117,5 +106,18 @@ public class MinigameHud extends CustomUIHud {
 
     public void setNumOfActivePlayers(String numOfActivePlayers) {
         this.numOfActivePlayers = numOfActivePlayers;
+    }
+
+    public void setPlayerKills(String playerKills) {
+        if (playerKills == null || playerKills.equals(this.playerKills)) {
+            return;
+        }
+        this.playerKills = playerKills;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
+        builder.set("#PlayerKills.Text", this.playerKills);
+        this.update(false, builder);
     }
 }

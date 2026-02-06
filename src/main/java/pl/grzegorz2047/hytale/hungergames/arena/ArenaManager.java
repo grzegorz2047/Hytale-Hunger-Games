@@ -32,7 +32,10 @@ import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 import pl.grzegorz2047.hytale.hungergames.db.ArenaRepository;
 import pl.grzegorz2047.hytale.hungergames.db.InMemoryRepository;
+import pl.grzegorz2047.hytale.hungergames.db.InMemoryPlayerRepository;
 import pl.grzegorz2047.hytale.hungergames.db.SqliteArenaRepository;
+import pl.grzegorz2047.hytale.hungergames.db.SqlitePlayerRepository;
+import pl.grzegorz2047.hytale.hungergames.db.PlayerRepository;
 
 import javax.annotation.Nonnull;
 import java.io.File;
@@ -44,28 +47,38 @@ import java.util.logging.Level;
 ...existing code...
 */
 public class ArenaManager {
+    private static final HytaleLogger LOGGER = HytaleLogger.forEnclosingClass();
+
     private final int maxHeight = 10;
     private final int spawnHeightYPos = maxHeight + 20;
     private final MainConfig config;
     HashMap<String, HgArena> listOfArenas = new HashMap<>();
 
     private final ArenaRepository repository;
+    private final PlayerRepository playerRepository;
     private final boolean startSchedulerOnArenaCreate;
 
     // Domyślny konstruktor: próbuje użyć SQLite, w razie błędu fallback do in-memory
     public ArenaManager(MainConfig config) {
-        this(config, null, true);
+        this(config, null, null, true);
     }
 
     // Konstruktor do wstrzyknięcia innego repozytorium (np. zewnętrzne DB lub mock w testach)
     public ArenaManager(MainConfig config, ArenaRepository repository) {
-        this(config, repository, true);
+        this(config, repository, null, true);
     }
 
     // Konstruktor z kontrolą schedulera (np. testy jednostkowe)
     public ArenaManager(MainConfig config, ArenaRepository repository, boolean startSchedulerOnArenaCreate) {
+        this(config, repository, null, startSchedulerOnArenaCreate);
+    }
+
+    // Pełny konstruktor
+    public ArenaManager(MainConfig config, ArenaRepository repository, PlayerRepository playerRepository, boolean startSchedulerOnArenaCreate) {
         this.config = config;
         this.startSchedulerOnArenaCreate = startSchedulerOnArenaCreate;
+
+        // Inicjalizuj ArenaRepository
         ArenaRepository repo = repository;
         if (repo == null) {
             try {
@@ -74,7 +87,7 @@ public class ArenaManager {
                 repo = new SqliteArenaRepository("data/arenas.db", config);
                 repo.initialize();
             } catch (Throwable t) {
-                System.out.println("Warning: SQLite unavailable, using in-memory repository: " + t.getMessage());
+                System.out.println("Warning: SQLite unavailable for arenas, using in-memory repository: " + t.getMessage());
                 repo = new InMemoryRepository();
             }
         } else {
@@ -84,6 +97,27 @@ public class ArenaManager {
             }
         }
         this.repository = repo;
+
+        // Inicjalizuj PlayerRepository
+        PlayerRepository playersRepo = playerRepository;
+        if (playersRepo == null) {
+            try {
+                File dataDir = new File("data");
+                if (!dataDir.exists()) dataDir.mkdirs();
+                playersRepo = new SqlitePlayerRepository("data/arenas.db");
+                playersRepo.initialize();
+            } catch (Throwable t) {
+                System.out.println("Warning: SQLite unavailable for players, using in-memory repository: " + t.getMessage());
+                playersRepo = new InMemoryPlayerRepository();
+            }
+        } else {
+            try {
+                playersRepo.initialize();
+            } catch (Throwable ignored) {
+            }
+        }
+        this.playerRepository = playersRepo;
+
         loadFromRepository();
     }
 
@@ -93,7 +127,7 @@ public class ArenaManager {
     }
 
     public boolean createArena(String worldName, List<Vector3d> spawnPoints, Vector3d lobbySpawnLocation) {
-        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation, this.config, this.startSchedulerOnArenaCreate);
+        HgArena arena = new HgArena(worldName, spawnPoints, lobbySpawnLocation, this.config, this.playerRepository, this.startSchedulerOnArenaCreate);
         this.listOfArenas.put(worldName, arena);
         try {
             repository.save(arena);
@@ -209,7 +243,7 @@ public class ArenaManager {
     // Ładowanie wszystkich aren z repozytorium
     private void loadFromRepository() {
         try {
-            Map<String, HgArena> loaded = repository.loadAll();
+            Map<String, HgArena> loaded = repository.loadAll(playerRepository);
             if (loaded != null) {
                 this.listOfArenas.putAll(loaded);
             }
@@ -573,6 +607,7 @@ public class ArenaManager {
         this.getArena(worldName).addBlockOpenedInArena(position);
     }
 
+
     private List<CompletableFuture<Void>> generateBoundaryWallTasks(World world, int centerX, int centerZ, int radius, int height, BlockType blockType) {
         List<CompletableFuture<Void>> tasks = new ArrayList<>();
 
@@ -601,5 +636,7 @@ public class ArenaManager {
         return tasks;
     }
 
-
+    public Optional<HgPlayer> getGlobalKills(PlayerRef player) throws Exception {
+        return playerRepository.findByUuid(player.getUuid());
+    }
 }

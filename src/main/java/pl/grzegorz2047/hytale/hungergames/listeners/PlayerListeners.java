@@ -1,34 +1,30 @@
 package pl.grzegorz2047.hytale.hungergames.listeners;
 
-import com.buuz135.mhud.MultipleHUD;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
-import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.spawn.GlobalSpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.arena.HgPlayer;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
-import pl.grzegorz2047.hytale.hungergames.teleport.LobbyTeleporter;
 
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerRefInPlayerRefComponentsBag;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Optional;
 import java.util.logging.Level;
 
 /**
@@ -74,16 +70,37 @@ public class PlayerListeners {
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
         HudManager hudManager = player.getHudManager();
         PlayerRef playerRef = player.getPlayerRef();
+        boolean isHudEnabled = this.config.get().isHudEnabled();
+        if (isHudEnabled) {
+            initMinigameHud(playerOnAnyArena, hudManager, playerRef);
+        }
+    }
+
+    private void initMinigameHud(boolean playerOnAnyArena, HudManager hudManager, PlayerRef playerRef) {
         if (playerOnAnyArena) {
-            hudManager.setCustomHud(playerRef,new MinigameHud(playerRef, 24, 300, true));
+            hudManager.setCustomHud(playerRef, new MinigameHud(playerRef, 24, 300, true));
 //            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
         } else {
             String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
             String formatted = tpl.replace("{username}", playerRef.getUsername());
-            hudManager.setCustomHud(playerRef, new LobbyHud(playerRef, 24, formatted));
+            LobbyHud lobbyHud = new LobbyHud(playerRef, 24, formatted);
+            hudManager.setCustomHud(playerRef, lobbyHud);
+            Optional<HgPlayer> globalKills;
+            try {
+                globalKills = arenaManager.getGlobalKills(playerRef);
+                if (globalKills.isPresent()) {
+                    String kills = this.config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
+                    lobbyHud.setKillStats(kills);
+
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
 //            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
         }
     }
+
 
     @NullableDecl
     private static Player getPlayer(Holder<EntityStore> holder) {

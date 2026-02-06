@@ -8,6 +8,7 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 public class LobbyHud extends CustomUIHud {
     private final int fontSize;
     private String message;
+    private String stats = ""; // Statystyki gracza (np. "Kills: 42")
 
     public LobbyHud(PlayerRef playerRef, int fontSize, String message) {
         super(playerRef);
@@ -20,6 +21,7 @@ public class LobbyHud extends CustomUIHud {
         uiCommandBuilder.append("Huds/Lobby.ui");
         uiCommandBuilder.set("#LobbyWelcome.Text", this.message);
         uiCommandBuilder.set("#LobbyWelcome.Style.FontSize", this.fontSize);
+        uiCommandBuilder.set("#LobbyStats.Text", this.stats);
     }
 
     public void setMessage(String message) {
@@ -29,6 +31,18 @@ public class LobbyHud extends CustomUIHud {
         this.message = message;
         UICommandBuilder builder = new UICommandBuilder();
         builder.set("#LobbyWelcome.Text", this.message);
+        builder.set("#LobbyStats.Text", this.stats);
+        this.update(false, builder);
+    }
+
+    public void setKillStats(String stats) {
+        if (stats == null || stats.equals(this.stats)) {
+            return;
+        }
+        this.stats = stats;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#LobbyWelcome.Text", this.message);
+        builder.set("#LobbyStats.Text", this.stats);
         this.update(false, builder);
     }
 }

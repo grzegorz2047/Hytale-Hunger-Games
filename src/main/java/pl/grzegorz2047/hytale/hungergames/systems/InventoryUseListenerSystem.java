@@ -18,7 +18,6 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
-import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -80,7 +79,7 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
                     useBlockEventPre.setCancelled(true);
                     return;
                 }
-                player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Opened inventory</color>"));
+//                player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Opened inventory</color>"));
                 Vector3i position = blockType.getPosition();
                 if (arenaManager.isBlockOpenedInArena(position, worldName)) {
                     return;

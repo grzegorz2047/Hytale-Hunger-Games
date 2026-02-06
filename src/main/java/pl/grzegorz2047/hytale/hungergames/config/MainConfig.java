@@ -17,6 +17,7 @@ public class MainConfig {
     private int deathmatchArenaSeconds = 30;
     private int startingArenaSeconds = 10;
     private int ingameArenaSeconds = 30;
+    private boolean isHudEnabled = true;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -38,8 +39,11 @@ public class MainConfig {
                     "hungergames.arena.alreadyOnArena:You are already on an arena. Leave this first.",
                     "hungergames.arena.generated:Arena generated!",
                     "hungergames.arena.joined:You have joined the arena: {worldName}",
+                    "hungergames.arena.numplayerjoined:Player joined {arenaName} {numberOfPlayers}/{maxNumberOfPlayersInArena}",
                     "hungergames.arena.left:You have left the arena: {worldName}",
+                    "hungergames.hud.lobby.globalKills:Global kills: {kills}",
                     "hungergames.arena.full:Arena is full",
+                    "hungergames.arena.gameEndedWinner: Game ended! Winner: {player}",
                     "hungergames.arena.playerLeftBroadcast:Player left the arena. Current players: {count}",
                     "hungergames.arena.countingCancelled:Countdown cancelled: not enough players",
                     "hungergames.arena.startIn:Start in {seconds}s",
@@ -101,6 +105,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("IsHudEnabled", Codec.BOOLEAN), (config, f) -> config.isHudEnabled = f, (config) -> config.isHudEnabled).addValidator(Validators.nonNull()).documentation("IsHudEnabled").add()
             .append(new KeyedCodec<>("MinimumPlayersToStartArena", Codec.INTEGER), (config, f) -> config.minimumPlayersToStartArena = f, (config) -> config.minimumPlayersToStartArena).addValidator(Validators.nonNull()).documentation("minimumPlayersToStartArena").add()
             .append(new KeyedCodec<>("DeathmatchArenaSeconds", Codec.INTEGER), (config, f) -> config.deathmatchArenaSeconds = f, (config) -> config.deathmatchArenaSeconds).addValidator(Validators.nonNull()).documentation("deathmatchArenaSeconds").add()
             .append(new KeyedCodec<>("StartingArenaSeconds", Codec.INTEGER), (config, f) -> config.startingArenaSeconds = f, (config) -> config.startingArenaSeconds).addValidator(Validators.nonNull()).documentation("startingArenaSeconds").add()
@@ -112,9 +117,11 @@ public class MainConfig {
     private static <FieldType> HashMap<String, String> parseMessages(FieldType f) {
         HashMap<String, String> stringStringHashMap = new HashMap<>();
         for (String messageKey : ((String[]) f)) {
-            String[] split = messageKey.split(":");
-            if (split.length != 2) continue;
-            stringStringHashMap.put(split[0], split[1]);
+            int colonIndex = messageKey.indexOf(":");
+            if (colonIndex == -1) continue;
+            String key = messageKey.substring(0, colonIndex);
+            String value = messageKey.substring(colonIndex + 1);
+            stringStringHashMap.put(key, value);
         }
         return stringStringHashMap;
     }
@@ -134,5 +141,9 @@ public class MainConfig {
 
     public int getIngameArenaSeconds() {
         return ingameArenaSeconds;
+    }
+
+    public boolean isHudEnabled() {
+        return isHudEnabled;
     }
 }

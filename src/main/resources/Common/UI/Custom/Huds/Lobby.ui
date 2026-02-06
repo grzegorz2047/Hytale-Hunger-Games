@@ -10,4 +10,13 @@ Group #LobbyHud {
           Alignment: Center,
         );
     }
+    Label #LobbyStats {
+        Anchor: (Width: 400, Height: 40, Top: 90, Left: 0);
+        Text: "";
+        Style: (Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center,
+          FontSize: 18,
+          TextColor: #FFD700(0.9),
+          Alignment: Center,
+        );
+    }
 }
