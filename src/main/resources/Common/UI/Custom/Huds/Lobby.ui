@@ -3,7 +3,7 @@ Group #LobbyHud {
   Anchor: (Width: 400, Height: 300, Top: 300, Right: 55);
     Label #LobbyWelcome {
         Anchor: (Width: 400, Height: 40, Top: 32, Left: 0);
-        Text: "Welcome to the server";
+        Text: "Example.com";
         Style: (Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center,
           FontSize: 24,
           TextColor: #FFFFFF(0.95),
@@ -11,12 +11,11 @@ Group #LobbyHud {
         );
     }
     Label #LobbyStats {
-        Anchor: (Width: 400, Height: 40, Top: 90, Left: 0);
+        Anchor: (Width: 400, Height: 40, Top: 90, Left: 32);
         Text: "";
-        Style: (Wrap: true, HorizontalAlignment: Start, VerticalAlignment: Start,
-          FontSize: 18,
+        Style: (Wrap: true,
+          FontSize: 24,
           TextColor: #FFD700(0.9),
-          Alignment: Left,
         );
     }
 }

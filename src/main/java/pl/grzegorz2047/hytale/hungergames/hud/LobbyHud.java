@@ -25,9 +25,6 @@ public class LobbyHud extends CustomUIHud {
     }
 
     public void setMessage(String message) {
-        if (message == null || message.equals(this.message)) {
-            return;
-        }
         this.message = message;
         UICommandBuilder builder = new UICommandBuilder();
         builder.set("#LobbyWelcome.Text", this.message);
@@ -36,9 +33,6 @@ public class LobbyHud extends CustomUIHud {
     }
 
     public void setKillStats(String stats) {
-        if (stats == null || stats.equals(this.stats)) {
-            return;
-        }
         this.stats = stats;
         UICommandBuilder builder = new UICommandBuilder();
         builder.set("#LobbyWelcome.Text", this.message);

@@ -67,7 +67,7 @@ public class MainConfig {
                     "hungergames.arena.notPlaying:There is no arena you are playing on",
                     "hungergames.arena.alreadyIngame:Arena is already ingame",
                     "hungergames.death.playerBroadcast:Death player: {player}",
-                    "hungergames.hud.lobby.welcome:Welcome {username} to the server",
+                    "hungergames.hud.lobby.welcome:Example.com - {username}",
                     "hungergames.hud.time:Time",
                     "hungergames.hud.playersLeft:Players left",
                     "hungergames.hud.arena:Arena",
