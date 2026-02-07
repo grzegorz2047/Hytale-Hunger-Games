@@ -25,6 +25,7 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.mainConfig = mainConfig;
 //        this.addSubCommand(new TeleportAllCommand());
         this.addSubCommand(new CreateArenaCommand("create", "creates raw arena to configure", arenaManager));
+        this.addSubCommand(new DisableArenaCommand("disable", "disables arena", arenaManager));
         this.addSubCommand(new EnableArenaCommand("enable", "enables arena", arenaManager));
         this.addSubCommand(new GenerateArenaCommand("generate", "creates arena with premade world", arenaManager));
         this.addSubCommand(new ForceStartArenaCommand("forcestart", "starts arena now", arenaManager));

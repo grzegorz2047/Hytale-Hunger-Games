@@ -30,7 +30,7 @@ public class ForceStartArenaCommand extends AbstractCommand {
         String arenaName = arenaNameArg.get(context);
         CommandSender sender = context.sender();
         if (!arenaManager.arenaExists(arenaName)) {
-            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound");
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound").replace("{arenaName}", arenaName);
             sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }

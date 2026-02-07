@@ -78,7 +78,7 @@ public class CreateArenaCommand extends AbstractCommand {
             Vector3d lobbySpawnPoint = spawnPoint.getPosition();
             boolean arenaCreated = arenaManager.createArena(worldName, new ArrayList<>(), lobbySpawnPoint);
             if (arenaCreated) {
-                String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.created");
+                String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.created").replace("{arenaName}", worldName);
                 String formatted = tpl == null ? "" : tpl.replace("{arenaName}", worldName);
                 sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             } else {

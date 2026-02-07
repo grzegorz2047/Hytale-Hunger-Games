@@ -25,7 +25,7 @@ public class DisableArenaCommand extends AbstractCommand {
 
     public DisableArenaCommand(@NullableDecl String name, @NullableDecl String description, ArenaManager arenaManager) {
         super(name, description);
-        this.worldNameArg = this.withRequiredArg("arenaname", "disables arena", ArgTypes.STRING);
+        this.worldNameArg = this.withRequiredArg("arenaName", "disables arena", ArgTypes.STRING);
         this.arenaManager = arenaManager;
     }
 
@@ -42,7 +42,7 @@ public class DisableArenaCommand extends AbstractCommand {
 
         World world = Universe.get().getWorld(worldName);
         if (world == null || !arenaManager.arenaExists(worldName)) {
-            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound");
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound").replace("{arenaName}", worldName);
             sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
@@ -50,7 +50,7 @@ public class DisableArenaCommand extends AbstractCommand {
         worldConfig.setCanSaveChunks(true);
         worldConfig.markChanged();
         this.arenaManager.setEnableArena(worldName, false);
-        String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.disabled");
+        String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.disabled").replace("{arenaName}", worldName);
         sender.sendMessage(MessageColorUtil.rawStyled(tpl));
         return null;
     }

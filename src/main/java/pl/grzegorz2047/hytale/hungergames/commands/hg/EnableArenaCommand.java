@@ -42,7 +42,7 @@ public class EnableArenaCommand extends AbstractCommand {
 
         World world = Universe.get().getWorld(worldName);
         if (world == null || !arenaManager.arenaExists(worldName)) {
-            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound");
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound").replace("{arenaName}", worldName);
             sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
@@ -50,7 +50,7 @@ public class EnableArenaCommand extends AbstractCommand {
         worldConfig.setCanSaveChunks(false);
         worldConfig.markChanged();
         this.arenaManager.setEnableArena(worldName, true);
-        String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.enabled");
+        String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.enabled").replace("{arenaName}", worldName);
         sender.sendMessage(MessageColorUtil.rawStyled(tpl));
         return null;
     }

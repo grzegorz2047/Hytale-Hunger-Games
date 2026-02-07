@@ -32,7 +32,7 @@ public class JoinArenaCommand extends AbstractCommand {
         }
         String arenaName = this.arenaNameArg.get(context);
         if (arenaManager.isArenaIngame(arenaName)) {
-            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.alreadyIngame");
+            String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.alreadyIngame").replace("{arenaName}", arenaName);
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }

@@ -261,7 +261,7 @@ public class ArenaManager {
         }
         HgArena arena = this.getArena(arenaName);
         if (!arena.isActive()) {
-            String tpl = this.config.getTranslation("hungergames.arena.notActive");
+            String tpl = this.config.getTranslation("hungergames.arena.notActive").replace("{arenaName}", arenaName);
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
