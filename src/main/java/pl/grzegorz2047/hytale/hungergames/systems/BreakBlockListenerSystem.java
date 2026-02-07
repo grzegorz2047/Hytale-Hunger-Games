@@ -47,7 +47,7 @@ public class BreakBlockListenerSystem extends EntityEventSystem<EntityStore, Bre
         String itemId = blockType.getId();
         String tplId = arenaManager.getConfig().getTranslation("hungergames.block.id");
         String formatted = tplId == null ? itemId : tplId.replace("{id}", itemId);
-        player.sendMessage(MessageColorUtil.rawStyled(formatted));
+        System.out.println(MessageColorUtil.rawStyled(formatted));
         if (!isAChestNamed(event, player, itemId.toLowerCase())) return;
 
         String tpl2 = arenaManager.getConfig().getTranslation("hungergames.block.cannotBreak");

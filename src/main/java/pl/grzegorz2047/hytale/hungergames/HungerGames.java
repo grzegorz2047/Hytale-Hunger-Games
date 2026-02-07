@@ -82,6 +82,11 @@ public class HungerGames extends JavaPlugin {
     @NullableDecl
     @Override
     public CompletableFuture<Void> preLoad() {
+        try {
+            Class.forName("org.sqlite.JDBC");
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e);
+        }
         config = loadConfig();
         return super.preLoad();
     }
@@ -138,7 +143,7 @@ public class HungerGames extends JavaPlugin {
                             .open(playerRef.getReference().getStore());
 
 
-                    debugInteraction(item);
+//                    debugInteraction(item);
 //                System.out.println("event " + item.interactionType());
                 });
             }
@@ -187,37 +192,6 @@ public class HungerGames extends JavaPlugin {
             });
         });
         return pageBuilder;
-    }
-
-    private static void debugInteraction(PlayerInteractionEvent item) {
-        SyncInteractionChain i = item.interaction();
-        InteractionChainData d = i.data;
-
-        System.out.println("========== INTERACTION DEBUG ==========");
-        System.out.println("chainId: " + i.chainId);
-        System.out.println("type: " + i.interactionType);
-        System.out.println("state: " + i.state);
-        System.out.println("initial: " + i.initial);
-        System.out.println("desync: " + i.desync);
-
-        System.out.println("itemInHandId: " + i.itemInHandId);
-        System.out.println("utilityItemId: " + i.utilityItemId);
-        System.out.println("toolsItemId: " + i.toolsItemId);
-
-        if (d == null) {
-            System.out.println("data: null");
-        } else {
-            System.out.println("entityId: " + d.entityId);
-            System.out.println("proxyId: " + d.proxyId);
-            System.out.println("targetSlot: " + d.targetSlot);
-
-            System.out.println("hitLocation: " + d.hitLocation);
-            System.out.println("hitNormal: " + d.hitNormal);
-            System.out.println("hitDetail: " + d.hitDetail);
-            System.out.println("blockPosition: " + d.blockPosition);
-        }
-
-        System.out.println("=======================================");
     }
 
     private Config<MainConfig> loadConfig() {
