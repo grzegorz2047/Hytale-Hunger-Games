@@ -57,7 +57,11 @@ public class AddSpawnPointCommand extends AbstractCommand {
             sender.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Cannot modify arena while it is active or in game</color>"));
             return null;
         }
-
+        String playerWorldName = player.getWorld().getName();
+        if (!playerWorldName.equals(arenaName)) {
+            sender.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>You must be in the arena world to add spawn points</color>"));
+            return null;
+        }
         // Get player's current position from their entity store
         Ref<EntityStore> playerRef = player.getReference();
         if (playerRef == null) {

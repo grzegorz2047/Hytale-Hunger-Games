@@ -139,7 +139,7 @@ public class HgArena {
         PlayerRef playerRef = playerComponent.getPlayerRef();
         clearCustomHud(playerComponent, playerRef);
         LobbyTeleporter.teleportToLobby(playerRef);
-        if(this.activePlayers.size() == 1) {
+        if (this.activePlayers.size() == 1) {
             // Mamy zwycięzcę!
             HgPlayer winner = this.activePlayers.getFirst();
             String tpl = this.config.getTranslation("hungergames.arena.gameEndedWinner");
@@ -169,10 +169,13 @@ public class HgArena {
         activePlayers.remove(hgPlayer);
         String tpl = this.config.getTranslation("hungergames.arena.left");
         playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
+        getArenaWorld().execute(() -> teleportToLobby(playerRef.getReference(), playerRef.getUsername()));
+
         synchronized (activePlayers) {
             String tpl2 = this.config.getTranslation("hungergames.arena.playerLeftBroadcast");
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tpl2 == null ? "" : tpl2.replace("{count}", String.valueOf(activePlayers.size()))));
         }
+
     }
 
     @NullableDecl
@@ -199,7 +202,9 @@ public class HgArena {
     }
 
     public boolean forceStart() {
-
+        if (this.playerSpawnPoints == null || playerSpawnPoints.isEmpty()) {
+            return false;
+        }
         startGame();
         teleportPlayersToTheSpawnPoints(playerSpawnPoints);
         return true;
@@ -383,13 +388,7 @@ public class HgArena {
                 Ref<EntityStore> refForTeleport = p.getReference();
                 // walidacja referencji przed użyciem
                 try {
-                    World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-                    Vector3d position = getLobbyPosition(defaultWorld, refForTeleport);
-                    try {
-                        addTeleportTask(refForTeleport, defaultWorld, position);
-                    } catch (Throwable t) {
-                        HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", p.getDisplayName(), t.getMessage());
-                    }
+                    teleportToLobby(refForTeleport, p.getDisplayName());
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
                 } catch (Throwable t) {
@@ -398,6 +397,16 @@ public class HgArena {
             }
         });
         reset();
+    }
+
+    private void teleportToLobby(Ref<EntityStore> refForTeleport, String displayName) {
+        World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
+        Vector3d position = getLobbyPosition(defaultWorld, refForTeleport);
+        try {
+            addTeleportTask(refForTeleport, defaultWorld, position);
+        } catch (Throwable t) {
+            HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", displayName, t.getMessage());
+        }
     }
 
     @NonNullDecl
@@ -572,11 +581,7 @@ public class HgArena {
                     if (p == null || p.getReference() == null) continue;
                     // wybieramy punkt startowy (round-robin)
                     Vector3d spawn;
-                    if (spawnPoints == null || spawnPoints.isEmpty()) {
-                        spawn = lobbySpawnLocation;
-                    } else {
-                        spawn = spawnPoints.get(idx % spawnPoints.size());
-                    }
+                    spawn = spawnPoints.get(idx % spawnPoints.size());
                     addTeleportTask(p.getReference(), world, spawn);
                 } catch (Throwable ignored) {
                 }
@@ -651,28 +656,22 @@ public class HgArena {
             String playerName = player.getDisplayName();
             HgPlayer hgPlayer;
 
-            // Spróbuj pobrać gracza z bazy
-            if (playerRepository != null) {
-                try {
-                    Optional<HgPlayer> existingPlayer = playerRepository.findByUuid(uuid);
-                    if (existingPlayer.isPresent()) {
-                        // Gracz istnieje w bazie - pobierz go i zresetuj kills na bieżącą grę
-                        hgPlayer = existingPlayer.get();
-                        hgPlayer.resetKills(); // Resetuj liczę zabójstw w bieżącej grze
-                    } else {
-                        // Gracz nie istnieje - stwórz nowego
-                        hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
-                        savePlayerToDatabase(hgPlayer);
-                    }
-                } catch (Exception e) {
-                    HytaleLogger.getLogger().atWarning().withCause(e)
-                            .log("Failed to load player %s from database, creating new: %s", uuid, e.getMessage());
+            try {
+                Optional<HgPlayer> existingPlayer = playerRepository.findByUuid(uuid);
+                if (existingPlayer.isPresent()) {
+                    // Gracz istnieje w bazie - pobierz go i zresetuj kills na bieżącą grę
+                    hgPlayer = existingPlayer.get();
+                    hgPlayer.resetKills(); // Resetuj liczę zabójstw w bieżącej grze
+                } else {
+                    // Gracz nie istnieje - stwórz nowego
                     hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
                     savePlayerToDatabase(hgPlayer);
                 }
-            } else {
-                // Jeśli brak PlayerRepository, stwórz nowego gracza w pamięci
+            } catch (Exception e) {
+                HytaleLogger.getLogger().atWarning().withCause(e)
+                        .log("Failed to load player %s from database, creating new: %s", uuid, e.getMessage());
                 hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
+                savePlayerToDatabase(hgPlayer);
             }
 
             // Dodaj do listy aktywnych graczy
@@ -693,7 +692,7 @@ public class HgArena {
             boolean isHudEnabled = this.config.isHudEnabled();
             World arenaWorld = getArenaWorld();
 
-            if(isHudEnabled) {
+            if (isHudEnabled) {
                 MinigameHud hud = new MinigameHud(playerRef, 24, 300, true);
                 player.getHudManager().setCustomHud(playerRef, hud);
                 hud.setArenaName(this.worldName);
@@ -706,7 +705,8 @@ public class HgArena {
             } catch (Throwable t) {
                 HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
             }
-        } catch (Throwable outer) {
+        } catch (
+                Throwable outer) {
             HytaleLogger.getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
         }
 

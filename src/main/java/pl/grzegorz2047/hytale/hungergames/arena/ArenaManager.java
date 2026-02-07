@@ -192,7 +192,7 @@ public class ArenaManager {
     public void addSpawnPointToArena(String worldName, Vector3d spawnPoint) {
         HgArena arena = this.getArena(worldName);
         if (arena == null) return;
-        arena.addSpawnPoint(spawnPoint);
+        arena.addSpawnPoint(spawnPoint.clone());
         try {
             repository.save(arena);
         } catch (Throwable t) {
