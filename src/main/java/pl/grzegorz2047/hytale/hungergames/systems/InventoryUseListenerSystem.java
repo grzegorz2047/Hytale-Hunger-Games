@@ -72,9 +72,7 @@ public class InventoryUseListenerSystem extends EntityEventSystem<EntityStore, U
                     windows.forEach((key, value) -> {
                         ItemContainer itemContainer = value.getItemContainer();
                         ItemStack itemStack = itemContainer.getItemStack((short) 0);
-                        assert itemStack != null;
-                        String itemId = itemStack.getItemId();
-                        System.out.println(itemId);
+
                     });
                     useBlockEventPre.setCancelled(true);
                     return;

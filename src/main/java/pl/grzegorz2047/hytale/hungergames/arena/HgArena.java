@@ -11,7 +11,6 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
@@ -119,48 +118,41 @@ public class HgArena {
         }
     }
 
-    public void playerDied(Player playerComponent, Player attackerPlayer) {
-        UUID deadPlayerUuid = playerComponent.getUuid();
-
-        // Znajdź gracza w liście aktywnych
-        HgPlayer deadHgPlayer = findHgPlayerByUuid(deadPlayerUuid);
-        if (deadHgPlayer == null) {
-            return;
-        }
+    public void playerDied(Player diedPlayer, Player attackerPlayer) {
+        UUID deadPlayerUuid = diedPlayer.getUuid();
         if (!this.isIngame()) {
             return;
         }
-        this.activePlayers.remove(deadHgPlayer);
+        HgPlayer hgPlayerByUuid = findHgPlayerByUuid(deadPlayerUuid);
+        this.activePlayers.remove(hgPlayerByUuid);
 
-        String killEntry;
         if (attackerPlayer != null) {
             UUID attackerUuid = attackerPlayer.getUuid();
             HgPlayer attackerHgPlayer = findHgPlayerByUuid(attackerUuid);
 
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has been killed by " + attackerPlayer.getDisplayName() + " !</color>"));
-            killEntry = attackerPlayer.getDisplayName() + " killed " + playerComponent.getDisplayName();
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + attackerPlayer.getDisplayName() + " !</color>"));
 
-            // Dodaj zabójstwo do bieżącej gry i do globalnych statystyk
             if (attackerHgPlayer != null) {
                 attackerHgPlayer.addKill(); // Zabójstwo w bieżącej grze
                 attackerHgPlayer.addGlobalKill(); // Incjrement globalnych zabójstw
                 savePlayerToDatabase(attackerHgPlayer);
             }
         } else {
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + playerComponent.getDisplayName() + " has died!</color>"));
-            killEntry = playerComponent.getDisplayName() + " died";
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has died!</color>"));
         }
-        addKillFeedEntry(killEntry);
-        updateKillFeedForActivePlayers();
-        PlayerRef playerRef = playerComponent.getPlayerRef();
-        clearCustomHud(playerComponent, playerRef);
-        LobbyTeleporter.teleportToLobby(playerRef);
+        Store<EntityStore> store = diedPlayer.getPlayerRef().getReference().getStore();
+
+        diedPlayer.getWorld().execute(() -> {
+            healPlayer(store, diedPlayer.getReference());
+            LobbyTeleporter.teleportToLobby(diedPlayer.getPlayerRef());
+        });
+
         if (this.activePlayers.size() == 1) {
-            // Mamy zwycięzcę!
-            HgPlayer winner = this.activePlayers.getFirst();
             String tpl = this.config.getTranslation("hungergames.arena.gameEndedWinner");
-            broadcastMessageToAllPlayers(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{player}", winner.getPlayerName())));
-            resetArenaNoWinners(playerComponent.getWorld());
+            broadcastMessageToAllPlayers(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{player}", attackerPlayer.getDisplayName())));
+            healPlayer(attackerPlayer.getPlayerRef().getReference().getStore(), attackerPlayer.getReference());
+            LobbyTeleporter.teleportToLobby(attackerPlayer.getPlayerRef());
+            reset();
         }
     }
 
@@ -293,7 +285,6 @@ public class HgArena {
         if (world == null) {
             return;
         }
-        Store<EntityStore> store = world.getEntityStore().getStore();
 
         switch (state) {
             case INGAME_DEATHMATCH_PHASE -> {
@@ -306,6 +297,7 @@ public class HgArena {
                         }
                         Ref<EntityStore> reference = p.getReference();
                         String tpl = this.config.getTranslation("hungergames.arena.gameEndsIn");
+                        Store<EntityStore> store = world.getEntityStore().getStore();
                         Player player = findPlayerInPlayerComponentsBag(store, reference);
                         if (player == null) {
                             continue;
@@ -335,6 +327,7 @@ public class HgArena {
                             if (p != null) {
                                 String tpl = this.config.getTranslation("hungergames.arena.deathmatchIn");
                                 Ref<EntityStore> reference = p.getReference();
+                                Store<EntityStore> store = world.getEntityStore().getStore();
                                 Player player = findPlayerInPlayerComponentsBag(store, reference);
                                 updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
                                 p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
@@ -356,7 +349,7 @@ public class HgArena {
             case STARTING -> {
                 countdown();
                 if (currentCountdown <= 0) {
-                    startGame(false);
+                    getArenaWorld().execute(() -> startGame(false));
                 }
                 if (isNotEnoughtPlayers(playersCount)) {
                     this.state = GameState.WAITING;
@@ -380,7 +373,6 @@ public class HgArena {
                             Ref<EntityStore> reference = p.getReference();
                             if (reference == null) continue;
                             Store<EntityStore> activeStore = reference.getStore();
-                            if (activeStore == null) continue;
                             Player player = findPlayerInPlayerComponentsBag(activeStore, reference);
                             updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
                             p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
@@ -473,18 +465,6 @@ public class HgArena {
         return playersCount < minimumStartArenaPlayersNumber;
     }
 
-    private void updateScoreboard(CustomUIHud customHud) {
-        // Domyślna wersja bez informacji o graczach - używana gdy nie mamy dostępu do UUID
-        if (customHud != null && customHud instanceof MinigameHud customHudMinigame) {
-            String timeLabel = getTranslationOrDefault("hungergames.hud.time", "Time");
-            String playersLabel = getTranslationOrDefault("hungergames.hud.playersLeft", "Players left");
-            String arenaLabel = getTranslationOrDefault("hungergames.hud.arena", "Arena");
-            customHudMinigame.setTimeText(timeLabel + ": " + formatHHMMSS(currentCountdown));
-            customHudMinigame.setNumOfActivePlayers(playersLabel + ": " + this.activePlayers.size());
-            customHudMinigame.setArenaName(arenaLabel + ": " + this.worldName);
-        }
-    }
-
     /**
      * Aktualizuje HUD gracza z jego bieżącą liczbą zabójstw
      */
@@ -556,47 +536,6 @@ public class HgArena {
         this.openedChests.clear();
         this.state = GameState.WAITING;
         this.currentCountdown = startingArenaSeconds;
-    }
-
-    private void addKillFeedEntry(String entry) {
-        if (entry == null || entry.isBlank()) {
-            return;
-        }
-        synchronized (recentKills) {
-            recentKills.addFirst(entry);
-            while (recentKills.size() > KILLFEED_MAX_LINES) {
-                recentKills.removeLast();
-            }
-        }
-    }
-
-
-    private void updateKillFeedForActivePlayers() {
-        World world = getArenaWorld();
-        if (world == null) {
-            return;
-        }
-        List<HgPlayer> snapshot;
-        synchronized (activePlayers) {
-            snapshot = new ArrayList<>(activePlayers);
-        }
-        String killFeedText = buildKillFeedText();
-        world.execute(() -> {
-            Store<EntityStore> store = world.getEntityStore().getStore();
-            for (HgPlayer hgPlayer : snapshot) {
-                PlayerRef p = Universe.get().getPlayer(hgPlayer.getUuid());
-                if (p == null || p.getReference() == null) {
-                    continue;
-                }
-                Player player = findPlayerInPlayerComponentsBag(store, p.getReference());
-                if (player == null) {
-                    continue;
-                }
-                CustomUIHud customHud = player.getHudManager().getCustomHud();
-                if (customHud instanceof MinigameHud minigameHud) {
-                }
-            }
-        });
     }
 
     protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
@@ -687,11 +626,14 @@ public class HgArena {
                 return;
             }
             int capacity = (playerSpawnPoints == null || playerSpawnPoints.isEmpty()) ? 1 : playerSpawnPoints.size();
-
+            if (isIngame()) {
+                return;
+            }
             // Sprawdź czy gracz już jest w arenie
             if (isPlayerInArena(uuid)) {
                 return;
             }
+
             if (activePlayers.size() >= capacity) {
                 String tpl = this.config.getTranslation("hungergames.arena.full");
                 player.sendMessage(MessageColorUtil.rawStyled(tpl));
@@ -729,11 +671,7 @@ public class HgArena {
 //            EntityStatMap statMap = (EntityStatMap) store.getComponent(playerRef, EntityStatMap.getComponentType());
 
 
-            EntityStatMap statMap = store.getComponent(reference, EntityStatMap.getComponentType());
-            if (statMap != null) {
-                statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
-
-            }
+            healPlayer(store, reference);
             World arenaWorld = getArenaWorld();
 
             try {
@@ -756,26 +694,13 @@ public class HgArena {
 
     }
 
-//    public void preparePlayerJoin(PlayerRef playerRef) {
-//        HytaleLogger logger = HytaleLogger.getLogger();
-//        try {
-//            World world = Universe.get().getWorld(playerRef.getWorldUuid());
-//            Ref<EntityStore> ref = playerRef.getReference();
-//
-//            world.execute(() -> {
-//                try {
-//                    Store<EntityStore> store = ref.getStore();
-//                    HudBuilder.detachedHud()
-//                            .fromHtml(hudArenaInfo)
-//                            .show(playerRef, store);
-//                } catch (Throwable t) {
-//                    logger.atWarning().withCause(t).log("Failed to show HUD: %s", t.getMessage());
-//                }
-//            });
-//        } catch (Throwable t) {
-//            logger.atWarning().withCause(t).log("Error preparing HUD: %s", t.getMessage());
-//        }
-//    }
+    private static void healPlayer(Store<EntityStore> store, Ref<EntityStore> reference) {
+        EntityStatMap statMap = store.getComponent(reference, EntityStatMap.getComponentType());
+        if (statMap != null) {
+            statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
+
+        }
+    }
 
     // pomocnicze API do odczytu liczby aktywnych graczy
     public int getActivePlayerCount() {
@@ -804,23 +729,6 @@ public class HgArena {
 
     public boolean isIngame() {
         return this.state.equals(GameState.INGAME_DEATHMATCH_PHASE) || this.state.equals(GameState.INGAME_MAIN_PHASE);
-    }
-
-    private void clearCustomHud(Player player, PlayerRef playerRef) {
-        if (playerRef == null || player == null) {
-            return;
-        }
-        boolean isHudEnabled = this.config.isHudEnabled();
-        if (!isHudEnabled) {
-            return;
-        }
-        try {
-            HudManager hudManager = player.getHudManager();
-            hudManager.resetHud(playerRef);
-        } catch (Throwable t) {
-            getLogger().atWarning().withCause(t)
-                    .log("Failed to clear custom HUD for player %s", playerRef.getUuid());
-        }
     }
 
     /**

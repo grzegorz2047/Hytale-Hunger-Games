@@ -142,18 +142,20 @@ public class PlayerListeners {
         Store<EntityStore> store = refEntityStore.getStore();
         EntityStore externalData = store.getExternalData();
         World world = externalData.getWorld();
-        PlayerRef playerRef = findPlayerRefInPlayerRefComponentsBag(store, refEntityStore);
-        if (playerRef == null) {
-            return;
-        }
-        Player player = findPlayerInPlayerComponentsBag(store, refEntityStore);
-        if (player == null) {
-            return;
-        }
-        boolean playerFirstJoin = player.isFirstSpawn();
-        boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
-        if(world.equals(Universe.get().getDefaultWorld())) {
-            arenaManager.preparePlayerJoinedServer(player);
-        }
+        world.execute(() -> {
+            PlayerRef playerRef = findPlayerRefInPlayerRefComponentsBag(store, refEntityStore);
+            if (playerRef == null) {
+                return;
+            }
+            Player player = findPlayerInPlayerComponentsBag(store, refEntityStore);
+            if (player == null) {
+                return;
+            }
+            boolean playerFirstJoin = player.isFirstSpawn();
+            boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
+            if (world.equals(Universe.get().getDefaultWorld())) {
+                arenaManager.preparePlayerJoinedServer(player);
+            }
+        });
     }
 }

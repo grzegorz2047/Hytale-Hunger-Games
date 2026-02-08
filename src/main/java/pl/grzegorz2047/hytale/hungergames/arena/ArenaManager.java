@@ -280,6 +280,12 @@ public class ArenaManager {
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
+        if (isArenaIngame(arenaName)) {
+            String tpl = this.config.getTranslation("hungergames.arena.alreadyIngame").replace("{arenaName}", arenaName);
+            player.sendMessage(MessageColorUtil.rawStyled(tpl));
+            return ;
+        }
+
         arena.join(player.getWorld(), player.getUuid());
         PlayerRef playerRef = player.getPlayerRef();
         hudService.initArenaScoreboard(arenaName, player, playerRef);
@@ -607,11 +613,15 @@ public class ArenaManager {
     }
 
     public void playerDied(Player deadPlayer, World world, Player attackerPlayer) {
-        this.getArena(world.getName()).playerDied(deadPlayer, attackerPlayer);
+        HgArena arena = this.getArena(world.getName());
+        if(arena == null) return;
+        arena.playerDied(deadPlayer, attackerPlayer);
     }
 
     public void playerDied(Player deadPlayer, World world) {
-        this.getArena(world.getName()).playerDied(deadPlayer, null);
+        HgArena arena = this.getArena(world.getName());
+        if(arena == null) return;
+        arena.playerDied(deadPlayer, null);
     }
 
     public boolean isBlockOpenedInArena(Vector3i position, String worldName) {

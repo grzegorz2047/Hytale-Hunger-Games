@@ -1,7 +1,5 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
-import com.hypixel.hytale.protocol.GameMode;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -31,7 +29,7 @@ public class LeaveArenaCommand extends AbstractCommand {
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
-        arenaManager.leaveArena(player);
+        player.getWorld().execute(() -> arenaManager.leaveArena(player));
         return null;
     }
 }

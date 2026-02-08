@@ -2,6 +2,7 @@ package pl.grzegorz2047.hytale.hungergames;
 
 import au.ellie.hyui.builders.PageBuilder;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
+import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.InteractionType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -11,6 +12,7 @@ import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
+import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
@@ -99,7 +101,11 @@ public class HungerGames extends JavaPlugin {
                     return;
                 }
                 world.execute(() -> {
-                    Player player = findPlayerInPlayerComponentsBag(playerRef.getReference().getStore(), playerRef.getReference());
+                    Ref<EntityStore> reference = playerRef.getReference();
+                    if(reference == null) {
+                        return;
+                    }
+                    Player player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
                     if (player == null) {
                         return;
                     }
@@ -116,7 +122,7 @@ public class HungerGames extends JavaPlugin {
                     }
                     PageBuilder pageBuilder = arenaListPage.prepareArenaListPage(playerRef, player, HungerGames.this.arenaManager.getArenaStats());
                     pageBuilder
-                            .open(playerRef.getReference().getStore());
+                            .open(reference.getStore());
 
 
 //                    debugInteraction(item);
