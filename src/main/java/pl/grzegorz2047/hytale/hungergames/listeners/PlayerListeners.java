@@ -1,5 +1,6 @@
 package pl.grzegorz2047.hytale.hungergames.listeners;
 
+import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
@@ -18,7 +19,6 @@ import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.arena.HgPlayer;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
-import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
 
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
@@ -63,42 +63,27 @@ public class PlayerListeners {
 
 
     private void onPlayerWorldEnter(AddPlayerToWorldEvent addPlayerToWorldEvent) {
-        Holder<EntityStore> holder = addPlayerToWorldEvent.getHolder();
-        World world = addPlayerToWorldEvent.getWorld();
-        Player player = getPlayer(holder);
-        if (player == null) return;
-        boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
-        HudManager hudManager = player.getHudManager();
-        PlayerRef playerRef = player.getPlayerRef();
-        boolean isHudEnabled = this.config.get().isHudEnabled();
-        if (isHudEnabled) {
-            initMinigameHud(playerOnAnyArena, hudManager, playerRef);
-        }
+
     }
 
-    private void initMinigameHud(boolean playerOnAnyArena, HudManager hudManager, PlayerRef playerRef) {
-        if (playerOnAnyArena) {
-            hudManager.setCustomHud(playerRef, new MinigameHud(playerRef, 24, 300, true));
-//            MultipleHUD.getInstance().setCustomHud(player,playerRef,"hg_scoreboard", new MinigameHud(playerRef, 24, 300, true));
-        } else {
-            String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
-            String formatted = tpl.replace("{username}", playerRef.getUsername());
-            LobbyHud lobbyHud = new LobbyHud(playerRef, 24, formatted);
-            hudManager.setCustomHud(playerRef, lobbyHud);
-            Optional<HgPlayer> globalKills;
-            try {
-                globalKills = arenaManager.getGlobalKills(playerRef);
-                if (globalKills.isPresent()) {
-                    String kills = this.config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
-                    lobbyHud.setKillStats(kills);
+    private void initMinigameHud(HudManager hudManager, PlayerRef playerRef) {
 
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+        String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
+        LobbyHud lobbyHud = new LobbyHud(playerRef, 24, tpl);
+        hudManager.setCustomHud(playerRef, lobbyHud);
+        Optional<HgPlayer> globalKills;
+        try {
+            globalKills = arenaManager.getGlobalKills(playerRef);
+            if (globalKills.isPresent()) {
+                String kills = this.config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
+                lobbyHud.setKillStats(kills);
+
             }
-
-//            MultipleHUD.getInstance().hideCustomHud(player,"scoreboard_hg");
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+
+
     }
 
 
@@ -129,12 +114,17 @@ public class PlayerListeners {
         String worldName = event.getWorld() != null ? event.getWorld().getName() : "unknown";
 
         LOGGER.at(Level.INFO).log("[MyHytaleMod] Player %s connected to world %s", playerName, worldName);
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        HudManager hudManager = player.getHudManager();
+        arenaManager.preparePlayerJoinedServer(player);
 
-        // TODO: Add your player join logic here
-        // Examples:
-        // - Send welcome message
-        // - Load player data
-        // - Announce join to other players
+        boolean isHudEnabled = this.config.get().isHudEnabled();
+        if (isHudEnabled) {
+            initMinigameHud(hudManager, event.getPlayerRef());
+        }
     }
 
     /**
@@ -164,11 +154,7 @@ public class PlayerListeners {
             return;
         }
         boolean playerFirstJoin = player.isFirstSpawn();
-        arenaManager.preparePlayerJoinedServer(player);
-        if (!arenaManager.isPlayerOnAnyArena(player)) {
-//            world.execute(()
-//                    -> LobbyTeleporter.teleportToLobby(playerRef));
+        boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
 
-        }
     }
 }

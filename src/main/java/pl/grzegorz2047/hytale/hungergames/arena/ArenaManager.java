@@ -150,8 +150,12 @@ public class ArenaManager {
         if (hgArena == null) {
             return false;
         }
-        hgArena.join(player.getWorld(), player.getUuid());
-        return hgArena.forceStart();
+        player.getWorld().execute(() -> {
+            hgArena.join(player.getWorld(), player.getUuid());
+            hgArena.forceStart();
+        });
+
+        return true;
     }
 
     public boolean isArenaEnabled(String arenaName) {
@@ -214,7 +218,7 @@ public class ArenaManager {
     public void setLobbySpawnLocation(String worldName, Vector3d lobbyLocation) {
         HgArena arena = this.getArena(worldName);
         if (arena == null) return;
-        arena.setLobbySpawnLocation(lobbyLocation);
+        arena.setArenaLobbySpawnLocation(lobbyLocation);
         try {
             repository.save(arena);
         } catch (Throwable t) {
@@ -225,7 +229,7 @@ public class ArenaManager {
     public Vector3d getLobbySpawnLocation(String worldName) {
         HgArena arena = this.getArena(worldName);
         if (arena == null) return null;
-        return arena.getLobbySpawnLocation();
+        return arena.getArenaLobbySpawnLocation();
     }
 
     public List<Vector3d> getSpawnPoints(String worldName) {

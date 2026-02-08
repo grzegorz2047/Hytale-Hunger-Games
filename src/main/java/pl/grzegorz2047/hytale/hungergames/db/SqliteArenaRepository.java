@@ -51,7 +51,7 @@ public class SqliteArenaRepository implements ArenaRepository {
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
                 ps.setString(1, arena.getWorldName());
                 ps.setInt(2, arena.isActive() ? 1 : 0);
-                Vector3d lobby = arena.getLobbySpawnLocation();
+                Vector3d lobby = arena.getArenaLobbySpawnLocation();
                 ps.setDouble(3, lobby != null ? lobby.getX() : 0);
                 ps.setDouble(4, lobby != null ? lobby.getY() : 0);
                 ps.setDouble(5, lobby != null ? lobby.getZ() : 0);

@@ -18,7 +18,7 @@ class HgArenaTest {
         }
 
         @Override
-        protected void startGame() {
+        protected void startGame(boolean isForced) {
             // no-op for tests to avoid touching Hytale runtime
         }
 

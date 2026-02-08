@@ -11,7 +11,7 @@ import java.util.HashMap;
 
 public class MainConfig {
 
-    private String[] itemsToFillChest = new String[]{"Armor_Iron_Chest:1", "Weapon_Sword_Runic:1", "Weapon_Sword_Crude:1", "Weapon_Sword_Cutlass:1", "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
+    private String[] itemsToFillChest = new String[]{"Weapon_Arrow_Crude:5", "Weapon_Shortbow_Combat:1", "Armor_Iron_Chest:1",  "Weapon_Sword_Crude:1",  "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
     private HashMap<String, String> messages = new HashMap<>();
     private int minimumPlayersToStartArena = 2;
     private int deathmatchArenaSeconds = 60;
@@ -87,7 +87,7 @@ public class MainConfig {
 
     public String getTranslation(String key) {
         String s = messages.get(key);
-        if(s == null) {
+        if (s == null) {
             return key;
         }
         return s;

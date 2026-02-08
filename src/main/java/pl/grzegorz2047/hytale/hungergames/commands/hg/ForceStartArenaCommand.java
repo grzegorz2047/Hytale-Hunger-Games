@@ -42,8 +42,8 @@ public class ForceStartArenaCommand extends AbstractCommand {
         if (!(sender instanceof Player player)) {
             return null;
         }
+        arenaManager.forceStartArena(arenaName, player);
 
-        player.getWorld().execute(() -> arenaManager.forceStartArena(arenaName, player));
         return null;
     }
 }

@@ -3,7 +3,6 @@ package pl.grzegorz2047.hytale.hungergames.arena;
 import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.math.vector.Transform;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
@@ -17,6 +16,7 @@ import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
+import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -40,12 +40,13 @@ import java.util.UUID;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.hypixel.hytale.logger.HytaleLogger.getLogger;
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 
 public class HgArena {
     private final String worldName;
     private final List<Vector3d> playerSpawnPoints;
-    private Vector3d lobbySpawnLocation;
+    private Vector3d arenaLobbySpawnLocation;
     private final int minimumStartArenaPlayersNumber;
     private boolean isArenaEnabled = false;
     private final int deathmatchArenaSeconds;
@@ -76,23 +77,23 @@ public class HgArena {
     private final Deque<String> recentKills = new ArrayDeque<>();
 
 
-    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config, PlayerRepository playerRepository) {
-        this(worldName, playerSpawnPoints, lobbySpawnLocation, config, playerRepository, true);
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d arenaLobbySpawnLocation, MainConfig config, PlayerRepository playerRepository) {
+        this(worldName, playerSpawnPoints, arenaLobbySpawnLocation, config, playerRepository, true);
     }
 
-    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config) {
-        this(worldName, playerSpawnPoints, lobbySpawnLocation, config, null, true);
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d arenaLobbySpawnLocation, MainConfig config) {
+        this(worldName, playerSpawnPoints, arenaLobbySpawnLocation, config, null, true);
     }
 
-    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config, boolean startScheduler) {
-        this(worldName, playerSpawnPoints, lobbySpawnLocation, config, null, startScheduler);
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d arenaLobbySpawnLocation, MainConfig config, boolean startScheduler) {
+        this(worldName, playerSpawnPoints, arenaLobbySpawnLocation, config, null, startScheduler);
     }
 
-    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config, PlayerRepository playerRepository, boolean startScheduler) {
+    public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d arenaLobbySpawnLocation, MainConfig config, PlayerRepository playerRepository, boolean startScheduler) {
         this.worldName = worldName;
         // Inicjalizujemy playerSpawnPoints jako ArrayList aby umożliwić dodawanie/usuwanie spawn points
         this.playerSpawnPoints = playerSpawnPoints != null ? new ArrayList<>(playerSpawnPoints) : new ArrayList<>();
-        this.lobbySpawnLocation = lobbySpawnLocation;
+        this.arenaLobbySpawnLocation = arenaLobbySpawnLocation;
         this.config = config;
         this.playerRepository = playerRepository;
 
@@ -172,7 +173,7 @@ public class HgArena {
         activePlayers.remove(hgPlayer);
         String tpl = this.config.getTranslation("hungergames.arena.left");
         playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
-        getArenaWorld().execute(() -> teleportToLobby(playerRef.getReference(), playerRef.getUsername()));
+        getArenaWorld().execute(() -> teleportToMainLobby(playerRef.getReference(), playerRef.getUsername()));
 
         synchronized (activePlayers) {
             String tpl2 = this.config.getTranslation("hungergames.arena.playerLeftBroadcast");
@@ -208,12 +209,17 @@ public class HgArena {
         if (this.playerSpawnPoints == null || playerSpawnPoints.isEmpty()) {
             return false;
         }
-        startGame();
-        teleportPlayersToTheSpawnPoints(playerSpawnPoints);
+        HytaleServer.SCHEDULED_EXECUTOR.schedule(
+                () -> {
+                    getArenaWorld().execute(() -> startGame(true));
+                },
+                1, TimeUnit.SECONDS
+        );
+
         return true;
     }
 
-    protected void startGame() {
+    protected void startGame(boolean isForced) {
         // Wymuszenie startu: natychmiast ustawiamy stan ingame i teleportujemy graczy
         this.state = GameState.INGAME_MAIN_PHASE;
         this.currentCountdown = ingameArenaSeconds;
@@ -221,17 +227,30 @@ public class HgArena {
         if (world == null) {
             return;
         }
+        float time = 12;
+        Store<EntityStore> store = world.getEntityStore().getStore();
+        WorldTimeResource worldTimeResource = store.getResource(WorldTimeResource.getResourceType());
+        worldTimeResource.setDayTime(time / (float) WorldTimeResource.HOURS_PER_DAY, world, store);
+
         for (HgPlayer hgPlayer : activePlayers) {
             PlayerRef p = Universe.get().getPlayer(hgPlayer.getUuid());
             if (p == null) {
                 continue;
             }
-            Player player = findPlayerInPlayerComponentsBag(world.getEntityStore().getStore(), p.getReference());
+            Player player = findPlayerInPlayerComponentsBag(store, p.getReference());
             Inventory inventory = player.getInventory();
             inventory.clear();
             inventory.markChanged();
         }
-        broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("The game has been force-started!"));
+        teleportPlayersToTheSpawnPoints(playerSpawnPoints);
+        String translation = config.getTranslation("hungergames.arena.arenaStarted");
+
+        String input = "The game has been force-started!";
+        if (isForced) {
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(input));
+        } else {
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(translation));
+        }
     }
 
     @NullableDecl
@@ -325,7 +344,7 @@ public class HgArena {
             case STARTING -> {
                 countdown();
                 if (currentCountdown <= 0) {
-                    startIngamePhase(ingameArenaSeconds, GameState.INGAME_MAIN_PHASE, "hungergames.arena.arenaStarted");
+                    startGame(false);
                 }
                 if (isNotEnoughtPlayers(playersCount)) {
                     this.state = GameState.WAITING;
@@ -391,33 +410,32 @@ public class HgArena {
                 Ref<EntityStore> refForTeleport = p.getReference();
                 // walidacja referencji przed użyciem
                 try {
-                    teleportToLobby(refForTeleport, p.getDisplayName());
+                    teleportToMainLobby(refForTeleport, p.getDisplayName());
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
                 } catch (Throwable t) {
-                    HytaleLogger.getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", p.getDisplayName(), t.getMessage());
+                    getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", p.getDisplayName(), t.getMessage());
                 }
             }
         });
         reset();
     }
 
-    private void teleportToLobby(Ref<EntityStore> refForTeleport, String displayName) {
+    private void teleportToMainLobby(Ref<EntityStore> refForTeleport, String displayName) {
         World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-        Vector3d position = getLobbyPosition(defaultWorld, refForTeleport);
+        Vector3d position = getMainLobbyPosition(defaultWorld, refForTeleport);
         try {
             addTeleportTask(refForTeleport, defaultWorld, position);
         } catch (Throwable t) {
-            HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", displayName, t.getMessage());
+            getLogger().atWarning().withCause(t).log("Failed to schedule teleport during end-game for player %s: %s", displayName, t.getMessage());
         }
     }
 
     @NonNullDecl
-    private static Vector3d getLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
+    private static Vector3d getMainLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
         ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
         Store<EntityStore> storeLocal = refForTeleport.getStore();
         Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
-
         Vector3d position = spawnPoint.getPosition();
         return position;
     }
@@ -572,13 +590,9 @@ public class HgArena {
     protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
         // teleportujemy oczekujących graczy do punktów startowych (równomiernie)
         World world = getArenaWorld();
-        if (world == null) {
-            return;
-        }
-
         // Weryfikacja czy mamy spawn pointy
         if (spawnPoints == null || spawnPoints.isEmpty()) {
-            HytaleLogger.getLogger().atWarning().log("Arena '%s' has no spawn points! Cannot teleport players.", this.worldName);
+            getLogger().atWarning().log("Arena '%s' has no spawn points! Cannot teleport players.", this.worldName);
             return;
         }
 
@@ -597,12 +611,12 @@ public class HgArena {
                     // wybieramy punkt startowy (round-robin)
                     int spawnIndex = idx % spawnPoints.size();
                     Vector3d spawn = spawnPoints.get(spawnIndex);
-                    HytaleLogger.getLogger().atInfo().log("Teleporting player %s to spawn point %d: %.2f, %.2f, %.2f",
-                        hgPlayer.getPlayerName(), spawnIndex, spawn.x, spawn.y, spawn.z);
+                    getLogger().atInfo().log("Teleporting player %s to spawn point %d: %.2f, %.2f, %.2f",
+                            hgPlayer.getPlayerName(), spawnIndex, spawn.x, spawn.y, spawn.z);
                     addTeleportTask(p.getReference(), world, spawn);
                 } catch (Throwable t) {
-                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to teleport player %s to spawn point: %s",
-                        hgPlayer.getPlayerName(), t.getMessage());
+                    getLogger().atWarning().withCause(t).log("Failed to teleport player %s to spawn point: %s",
+                            hgPlayer.getPlayerName(), t.getMessage());
                 }
                 idx++;
             }
@@ -636,15 +650,15 @@ public class HgArena {
         this.playerSpawnPoints.clear();
     }
 
-    public void setLobbySpawnLocation(Vector3d lobbySpawnLocation) {
-        if (lobbySpawnLocation != null) {
+    public void setArenaLobbySpawnLocation(Vector3d arenaLobbySpawnLocation) {
+        if (arenaLobbySpawnLocation != null) {
             // Create a new Vector3d to avoid external modifications
-            this.lobbySpawnLocation = new Vector3d(lobbySpawnLocation.x, lobbySpawnLocation.y, lobbySpawnLocation.z);
+            this.arenaLobbySpawnLocation = new Vector3d(arenaLobbySpawnLocation.x, arenaLobbySpawnLocation.y, arenaLobbySpawnLocation.z);
         }
     }
 
-    public Vector3d getLobbySpawnLocation() {
-        return this.lobbySpawnLocation;
+    public Vector3d getArenaLobbySpawnLocation() {
+        return this.arenaLobbySpawnLocation;
     }
 
     public List<Vector3d> getSpawnPoints() {
@@ -688,22 +702,15 @@ public class HgArena {
                     savePlayerToDatabase(hgPlayer);
                 }
             } catch (Exception e) {
-                HytaleLogger.getLogger().atWarning().withCause(e)
+                getLogger().atWarning().withCause(e)
                         .log("Failed to load player %s from database, creating new: %s", uuid, e.getMessage());
                 hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
                 savePlayerToDatabase(hgPlayer);
             }
 
-            // Dodaj do listy aktywnych graczy
-            activePlayers.add(hgPlayer);
 
             PlayerRef playerRef = Universe.get().getPlayer(uuid);
             Ref<EntityStore> reference = playerRef.getReference();
-
-            String tplJoined = this.config.getTranslation("hungergames.arena.joined");
-            String tplplayerJoined = this.config.getTranslation("hungergames.arena.numplayerjoined");
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tplplayerJoined == null ? "" : tplplayerJoined.replace("{numberOfPlayers}", String.valueOf(this.activePlayers.size())).replace("{maxNumberOfPlayersInArena}", String.valueOf(this.playerSpawnPoints.size())).replace("{arenaName}", this.worldName)));
-            player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
             Inventory inventory = player.getInventory();
             inventory.clear();
             inventory.markChanged();
@@ -727,14 +734,21 @@ public class HgArena {
             }
 
             try {
+                activePlayers.add(hgPlayer);
 
-                addTeleportTask(reference, arenaWorld, this.lobbySpawnLocation);
+                addTeleportTask(reference, arenaWorld, this.arenaLobbySpawnLocation);
+
+                String tplJoined = this.config.getTranslation("hungergames.arena.joined");
+                String tplplayerJoined = this.config.getTranslation("hungergames.arena.numplayerjoined");
+                broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tplplayerJoined == null ? "" : tplplayerJoined.replace("{numberOfPlayers}", String.valueOf(this.activePlayers.size())).replace("{maxNumberOfPlayersInArena}", String.valueOf(this.playerSpawnPoints.size())).replace("{arenaName}", this.worldName)));
+                player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
+
             } catch (Throwable t) {
-                HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
+                getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
             }
         } catch (
                 Throwable outer) {
-            HytaleLogger.getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
+            getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
         }
 
     }
@@ -779,9 +793,9 @@ public class HgArena {
             // dodanie komponentu może wyrzucić IllegalStateException jeśli ref jest nieważny — obsłużymy to
             store.addComponent(playerRef, componentType, teleport);
         } catch (IllegalStateException ise) {
-            HytaleLogger.getLogger().atWarning().withCause(ise).log("Invalid entity reference when adding teleport: %s", ise.getMessage());
+            getLogger().atWarning().withCause(ise).log("Invalid entity reference when adding teleport: %s", ise.getMessage());
         } catch (Throwable t) {
-            HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to add teleport task: %s", t.getMessage());
+            getLogger().atWarning().withCause(t).log("Failed to add teleport task: %s", t.getMessage());
         }
     }
 
@@ -801,7 +815,7 @@ public class HgArena {
             HudManager hudManager = player.getHudManager();
             hudManager.resetHud(playerRef);
         } catch (Throwable t) {
-            HytaleLogger.getLogger().atWarning().withCause(t)
+            getLogger().atWarning().withCause(t)
                     .log("Failed to clear custom HUD for player %s", playerRef.getUuid());
         }
     }
@@ -838,7 +852,7 @@ public class HgArena {
                 playerRepository.save(hgPlayer);
             }
         } catch (Exception e) {
-            HytaleLogger.getLogger().atWarning().withCause(e)
+            getLogger().atWarning().withCause(e)
                     .log("Failed to save player %s to database: %s", hgPlayer.getPlayerName(), e.getMessage());
         }
     }
