@@ -17,9 +17,8 @@ public class JoinArenaCommand extends AbstractCommand {
     private final ArenaManager arenaManager;
     private final RequiredArg<String> arenaNameArg;
 
-    public JoinArenaCommand(String forcestart, String startsArenaNow, ArenaManager arenaManager) {
-        super(forcestart, startsArenaNow);
-        this.setPermissionGroup(GameMode.Adventure); // Allows the command to be used by anyone, not just OP
+    public JoinArenaCommand(String name, String description, ArenaManager arenaManager) {
+        super(name, description);
         this.arenaManager = arenaManager;
         arenaNameArg = this.withRequiredArg("arenaName", "force starts arena with that name", ArgTypes.STRING);
     }

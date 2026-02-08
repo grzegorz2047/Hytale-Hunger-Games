@@ -318,9 +318,9 @@ public class ArenaManager {
                                 generationTasks.add(task);
                             }
                             int hillRadius = 10;
-                            generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Wood_Blackwood_Ornate"), 10));
+                            generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Barrier"), 10));
                             generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
-                            generationTasks.addAll(generateBoundaryWallTasks(world, 0, 0, 100, 30, BlockType.fromString("Wood_Blackwood_Ornate")));
+                            generationTasks.addAll(generateBoundaryWallTasks(world, 0, 0, 100, 30, BlockType.fromString("Barrier")));
                             CompletableFuture
                                     .allOf(generationTasks.toArray(new CompletableFuture[0]))
                                     .thenRun(() -> {

@@ -1,5 +1,6 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
+import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
@@ -15,10 +16,13 @@ public class HungerGamesCommand extends AbstractCommandCollection {
 
     public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager) {
         this(pluginName, pluginVersion, arenaManager, null);
+        this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
     }
 
     public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager, MainConfig mainConfig) {
-        super("hg", "Prints a test message from the " + pluginName + " plugin.");
+        super("hg", "Main command for Hunger Games plugin");
+        this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
+
         this.addAliases("hungergames", "survivalgames", "sg");
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;

@@ -17,8 +17,6 @@ public class LeaveArenaCommand extends AbstractCommand {
 
     public LeaveArenaCommand(String commandName, String commandDescription, ArenaManager arenaManager) {
         super(commandName, commandDescription);
-        this.setPermissionGroup(GameMode.Adventure); // Allows the command to be used by anyone, not just OP
-
         this.arenaManager = arenaManager;
     }
 

@@ -29,6 +29,11 @@ public class ForceStartArenaCommand extends AbstractCommand {
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         String arenaName = arenaNameArg.get(context);
         CommandSender sender = context.sender();
+        if (!sender.hasPermission("hungergames.admin")) {
+            String tpl = arenaManager.getConfig().getTranslation("noPermission");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
+            return null;
+        }
         if (!arenaManager.arenaExists(arenaName)) {
             String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.notFound").replace("{arenaName}", arenaName);
             sender.sendMessage(MessageColorUtil.rawStyled(tpl));
@@ -37,11 +42,7 @@ public class ForceStartArenaCommand extends AbstractCommand {
         if (!(sender instanceof Player player)) {
             return null;
         }
-        if (!sender.hasPermission("hungergames.admin")) {
-            String tpl = arenaManager.getConfig().getTranslation("noPermission");
-            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
-            return null;
-        }
+
         player.getWorld().execute(() -> arenaManager.forceStartArena(arenaName, player));
         return null;
     }

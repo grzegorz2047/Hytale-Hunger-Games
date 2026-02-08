@@ -186,7 +186,6 @@ public class HungerGames extends JavaPlugin {
                 .withLifetime(CustomPageLifetime.CanDismissOrCloseThroughInteraction);
         arenaStats.forEach(arenaStat -> {
             pageBuilder.addEventListener("btn-" + arenaStat.worldName(), CustomUIEventBindingType.Activating, (data, ctx) -> {
-                System.out.println(data);
                 ctx.getPage().ifPresent(HyUIPage::close);
                 arenaManager.joinArena(arenaStat.worldName(), player);
             });
