@@ -19,6 +19,7 @@ public class MainConfig {
     private int ingameArenaSeconds = 60;
     private boolean isHudEnabled = true;
     private boolean shouldPrepareInventoryOnLobbyJoin = true;
+    private boolean forceLobbySpawn = true;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -113,6 +114,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("ForceLobbySpawn", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawn = f, (config) -> config.forceLobbySpawn).addValidator(Validators.nonNull()).documentation("forceLobbySpawn").add()
             .append(new KeyedCodec<>("ShouldPrepareInventoryOnLobbyJoin", Codec.BOOLEAN), (config, f) -> config.shouldPrepareInventoryOnLobbyJoin = f, (config) -> config.shouldPrepareInventoryOnLobbyJoin).addValidator(Validators.nonNull()).documentation("shouldPrepareInventoryOnLobbyJoin").add()
             .append(new KeyedCodec<>("IsHudEnabled", Codec.BOOLEAN), (config, f) -> config.isHudEnabled = f, (config) -> config.isHudEnabled).addValidator(Validators.nonNull()).documentation("isHudEnabled").add()
             .append(new KeyedCodec<>("MinimumPlayersToStartArena", Codec.INTEGER), (config, f) -> config.minimumPlayersToStartArena = f, (config) -> config.minimumPlayersToStartArena).addValidator(Validators.nonNull()).documentation("minimumPlayersToStartArena").add()
@@ -158,5 +160,9 @@ public class MainConfig {
 
     public boolean shouldPrepareInventoryOnLobbyJoin() {
         return shouldPrepareInventoryOnLobbyJoin;
+    }
+
+    public boolean forceLobbySpawn() {
+        return forceLobbySpawn;
     }
 }

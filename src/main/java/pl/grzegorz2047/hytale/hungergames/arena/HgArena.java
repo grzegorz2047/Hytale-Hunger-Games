@@ -64,6 +64,18 @@ public class HgArena {
         this.openedChests.add(position);
     }
 
+    public void playerDisconnected(PlayerRef playerRef) {
+        if (playerRef == null) {
+            return;
+        }
+        UUID uuid = playerRef.getUuid();
+        HgPlayer hgPlayer = findHgPlayerByUuid(uuid);
+        if (hgPlayer == null) {
+            return;
+        }
+        activePlayers.remove(hgPlayer);
+    }
+
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
 
     private GameState state = GameState.WAITING;
@@ -722,16 +734,7 @@ public class HgArena {
                 statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
 
             }
-            // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
-            boolean isHudEnabled = this.config.isHudEnabled();
             World arenaWorld = getArenaWorld();
-
-            if (isHudEnabled) {
-                MinigameHud hud = new MinigameHud(playerRef, 24, 300, true);
-                player.getHudManager().setCustomHud(playerRef, hud);
-                hud.setArenaName(this.worldName);
-                hud.setNumOfActivePlayers("");
-            }
 
             try {
                 activePlayers.add(hgPlayer);

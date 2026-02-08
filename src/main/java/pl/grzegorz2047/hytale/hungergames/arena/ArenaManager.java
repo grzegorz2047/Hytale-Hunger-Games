@@ -29,6 +29,7 @@ import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGen
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.hud.HudService;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 import pl.grzegorz2047.hytale.hungergames.db.ArenaRepository;
 import pl.grzegorz2047.hytale.hungergames.db.InMemoryRepository;
@@ -57,25 +58,23 @@ public class ArenaManager {
     private final ArenaRepository repository;
     private final PlayerRepository playerRepository;
     private final boolean startSchedulerOnArenaCreate;
+    private HudService hudService;
 
     // Domyślny konstruktor: próbuje użyć SQLite, w razie błędu fallback do in-memory
-    public ArenaManager(MainConfig config) {
-        this(config, null, null, true);
-    }
-
-    // Konstruktor do wstrzyknięcia innego repozytorium (np. zewnętrzne DB lub mock w testach)
-    public ArenaManager(MainConfig config, ArenaRepository repository) {
-        this(config, repository, null, true);
+    public ArenaManager(MainConfig config, HudService hudService) {
+        this(config, null, null, true, hudService);
     }
 
     // Konstruktor z kontrolą schedulera (np. testy jednostkowe)
-    public ArenaManager(MainConfig config, ArenaRepository repository, boolean startSchedulerOnArenaCreate) {
-        this(config, repository, null, startSchedulerOnArenaCreate);
+    public ArenaManager(MainConfig config, ArenaRepository repository, boolean startSchedulerOnArenaCreate, HudService hudService) {
+        this(config, repository, null, startSchedulerOnArenaCreate, hudService);
+
     }
 
     // Pełny konstruktor
-    public ArenaManager(MainConfig config, ArenaRepository repository, PlayerRepository playerRepository, boolean startSchedulerOnArenaCreate) {
+    public ArenaManager(MainConfig config, ArenaRepository repository, PlayerRepository playerRepository, boolean startSchedulerOnArenaCreate, HudService hudService) {
         this.config = config;
+        this.hudService = hudService;
         this.startSchedulerOnArenaCreate = startSchedulerOnArenaCreate;
 
         // Inicjalizuj ArenaRepository
@@ -149,14 +148,21 @@ public class ArenaManager {
         HgArena hgArena = getArena(arenaName);
         if (hgArena == null) {
             return false;
+
         }
         player.getWorld().execute(() -> {
+            PlayerRef playerRef = player.getPlayerRef();
             hgArena.join(player.getWorld(), player.getUuid());
+
+            // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
+            hudService.initArenaScoreboard(arenaName, player, playerRef);
             hgArena.forceStart();
         });
 
         return true;
     }
+
+
 
     public boolean isArenaEnabled(String arenaName) {
         return this.getArena(arenaName).isActive();
@@ -275,6 +281,9 @@ public class ArenaManager {
             return;
         }
         arena.join(player.getWorld(), player.getUuid());
+        PlayerRef playerRef = player.getPlayerRef();
+        hudService.initArenaScoreboard(arenaName, player, playerRef);
+
     }
 
 
@@ -654,5 +663,10 @@ public class ArenaManager {
         arena.isPlayerInArena(uuid);
         boolean arenaNotInGame = !arena.isIngame();
         return arenaNotInGame;
+    }
+
+    public void playerDisconnected(PlayerRef playerRef) {
+        this.listOfArenas.forEach((_, value) -> value.playerDisconnected(playerRef));
+
     }
 }

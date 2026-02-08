@@ -1,30 +1,28 @@
 package pl.grzegorz2047.hytale.hungergames.listeners;
 
-import com.hypixel.hytale.component.ComponentType;
 import com.hypixel.hytale.component.Holder;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
+import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
-import pl.grzegorz2047.hytale.hungergames.arena.HgPlayer;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
-import pl.grzegorz2047.hytale.hungergames.hud.LobbyHud;
+import pl.grzegorz2047.hytale.hungergames.hud.HudService;
 
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerRefInPlayerRefComponentsBag;
 
-import java.util.Optional;
 import java.util.logging.Level;
 
 /**
@@ -40,11 +38,13 @@ public class PlayerListeners {
     private final HungerGames plugin;
     private final ArenaManager arenaManager;
     private final Config<MainConfig> config;
+    private final HudService hudService;
 
-    public PlayerListeners(HungerGames plugin, ArenaManager arenaManager, Config<MainConfig> config) {
+    public PlayerListeners(HungerGames plugin, ArenaManager arenaManager, Config<MainConfig> config, HudService hudService) {
         this.plugin = plugin;
         this.arenaManager = arenaManager;
         this.config = config;
+        this.hudService = hudService;
     }
 
     /**
@@ -62,28 +62,26 @@ public class PlayerListeners {
     }
 
 
-    private void onPlayerWorldEnter(AddPlayerToWorldEvent addPlayerToWorldEvent) {
-
-    }
-
-    private void initMinigameHud(HudManager hudManager, PlayerRef playerRef) {
-
-        String tpl = this.config.get().getTranslation("hungergames.hud.lobby.welcome");
-        LobbyHud lobbyHud = new LobbyHud(playerRef, 24, tpl);
-        hudManager.setCustomHud(playerRef, lobbyHud);
-        Optional<HgPlayer> globalKills;
-        try {
-            globalKills = arenaManager.getGlobalKills(playerRef);
-            if (globalKills.isPresent()) {
-                String kills = this.config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
-                lobbyHud.setKillStats(kills);
-
+    private void onPlayerWorldEnter(AddPlayerToWorldEvent event) {
+        Holder<EntityStore> holder = event.getHolder();
+        Player player = getPlayer(holder);
+        if (player == null) return;
+        PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
+        World world = event.getWorld();
+        if (world.equals(Universe.get().getDefaultWorld())) {
+            boolean isHudEnabled = config.get().isHudEnabled();
+            if (isHudEnabled) {
+                try {
+                    var globalKills = arenaManager.getGlobalKills(playerRef);
+                    if (globalKills.isPresent()) {
+                        String kills = config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
+                        hudService.initLobbyHud(player.getHudManager(), playerRef, kills);
+                    }
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
         }
-
-
     }
 
 
@@ -92,8 +90,8 @@ public class PlayerListeners {
         return holder.getComponent(Player.getComponentType());
     }
 
-    private void onPlayerWorldLeave(DrainPlayerFromWorldEvent drainPlayerFromWorldEvent) {
-        Holder<EntityStore> holder = drainPlayerFromWorldEvent.getHolder();
+    private void onPlayerWorldLeave(DrainPlayerFromWorldEvent event) {
+        Holder<EntityStore> holder = event.getHolder();
         Player player = getPlayer(holder);
         if (player == null) return;
         PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
@@ -118,12 +116,11 @@ public class PlayerListeners {
         if (player == null) {
             return;
         }
-        HudManager hudManager = player.getHudManager();
-        arenaManager.preparePlayerJoinedServer(player);
+        Holder<EntityStore> holder = event.getHolder();
 
-        boolean isHudEnabled = this.config.get().isHudEnabled();
-        if (isHudEnabled) {
-            initMinigameHud(hudManager, event.getPlayerRef());
+        if (config.get().forceLobbySpawn()) {
+            event.setWorld(Universe.get().getDefaultWorld());
+            holder.removeComponent(TransformComponent.getComponentType());
         }
     }
 
@@ -134,7 +131,7 @@ public class PlayerListeners {
      */
     private void onPlayerDisconnect(PlayerDisconnectEvent event) {
         PlayerRef playerRef = event.getPlayerRef();
-        arenaManager.playerLeft(playerRef);
+        arenaManager.playerDisconnected(playerRef);
     }
 
     private void onPlayerJoin(PlayerReadyEvent event) {
@@ -155,6 +152,8 @@ public class PlayerListeners {
         }
         boolean playerFirstJoin = player.isFirstSpawn();
         boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
-
+        if(world.equals(Universe.get().getDefaultWorld())) {
+            arenaManager.preparePlayerJoinedServer(player);
+        }
     }
 }

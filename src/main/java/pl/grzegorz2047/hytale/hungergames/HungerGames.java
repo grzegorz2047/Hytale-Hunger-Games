@@ -1,13 +1,9 @@
 package pl.grzegorz2047.hytale.hungergames;
 
-import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.PageBuilder;
-import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
-import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -18,18 +14,17 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
-import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
 import pl.grzegorz2047.hytale.hungergames.commands.hg.HungerGamesCommand;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.events.PlayerInteractMouseEventListener;
 import pl.grzegorz2047.hytale.hungergames.hud.ArenaListPage;
+import pl.grzegorz2047.hytale.hungergames.hud.HudService;
 import pl.grzegorz2047.hytale.hungergames.listeners.PlayerListeners;
 import pl.grzegorz2047.hytale.hungergames.systems.*;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
-import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
@@ -48,6 +43,7 @@ public class HungerGames extends JavaPlugin {
     private ArenaManager arenaManager;
     private Config<MainConfig> config;
     private ArenaListPage arenaListPage;
+    private HudService hudService;
 
     //    private final SubmissionPublisher<PlayerInteractionEvent> publisher = new SubmissionPublisher<>();
 
@@ -71,7 +67,9 @@ public class HungerGames extends JavaPlugin {
     @Override
     protected void setup() {
         LOGGER.atInfo().log("Setting up plugin " + this.getName());
-        this.arenaManager = new ArenaManager(config.get());
+        hudService = new HudService(config.get());
+        this.arenaManager = new ArenaManager(config.get(), hudService);
+
         arenaListPage = new ArenaListPage(this.arenaManager, config.get());
         PlayerInteractLib playerInteractLib = (PlayerInteractLib) PluginManager.get().getPlugin(PluginIdentifier.fromString("Hytale:PlayerInteractLib"));
 
@@ -136,7 +134,7 @@ public class HungerGames extends JavaPlugin {
 
             }
         });
-        new PlayerListeners(this, arenaManager, config).register(getEventRegistry());
+        new PlayerListeners(this, arenaManager, config, hudService).register(getEventRegistry());
         new PlayerInteractMouseEventListener(this).register(getEventRegistry());
         new InventoryUseListenerSystem(this, arenaManager, config.get()).register(getEntityStoreRegistry());
         new PlaceBlockListenerSystem(this, arenaManager, config.get()).register(getEntityStoreRegistry());
