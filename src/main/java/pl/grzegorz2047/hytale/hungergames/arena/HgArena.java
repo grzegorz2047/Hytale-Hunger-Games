@@ -90,7 +90,8 @@ public class HgArena {
 
     public HgArena(String worldName, List<Vector3d> playerSpawnPoints, Vector3d lobbySpawnLocation, MainConfig config, PlayerRepository playerRepository, boolean startScheduler) {
         this.worldName = worldName;
-        this.playerSpawnPoints = playerSpawnPoints;
+        // Inicjalizujemy playerSpawnPoints jako ArrayList aby umożliwić dodawanie/usuwanie spawn points
+        this.playerSpawnPoints = playerSpawnPoints != null ? new ArrayList<>(playerSpawnPoints) : new ArrayList<>();
         this.lobbySpawnLocation = lobbySpawnLocation;
         this.config = config;
         this.playerRepository = playerRepository;
@@ -575,17 +576,33 @@ public class HgArena {
             return;
         }
 
+        // Weryfikacja czy mamy spawn pointy
+        if (spawnPoints == null || spawnPoints.isEmpty()) {
+            HytaleLogger.getLogger().atWarning().log("Arena '%s' has no spawn points! Cannot teleport players.", this.worldName);
+            return;
+        }
+
+        // Zrób kopię listy graczy aby uniknąć ConcurrentModificationException
+        List<HgPlayer> playerSnapshot;
+        synchronized (activePlayers) {
+            playerSnapshot = new ArrayList<>(activePlayers);
+        }
+
         world.execute(() -> {
             int idx = 0;
-            for (HgPlayer hgPlayer : activePlayers) {
+            for (HgPlayer hgPlayer : playerSnapshot) {
                 PlayerRef p = Universe.get().getPlayer(hgPlayer.getUuid());
                 try {
                     if (p == null || p.getReference() == null) continue;
                     // wybieramy punkt startowy (round-robin)
-                    Vector3d spawn;
-                    spawn = spawnPoints.get(idx % spawnPoints.size());
+                    int spawnIndex = idx % spawnPoints.size();
+                    Vector3d spawn = spawnPoints.get(spawnIndex);
+                    HytaleLogger.getLogger().atInfo().log("Teleporting player %s to spawn point %d: %.2f, %.2f, %.2f",
+                        hgPlayer.getPlayerName(), spawnIndex, spawn.x, spawn.y, spawn.z);
                     addTeleportTask(p.getReference(), world, spawn);
-                } catch (Throwable ignored) {
+                } catch (Throwable t) {
+                    HytaleLogger.getLogger().atWarning().withCause(t).log("Failed to teleport player %s to spawn point: %s",
+                        hgPlayer.getPlayerName(), t.getMessage());
                 }
                 idx++;
             }
