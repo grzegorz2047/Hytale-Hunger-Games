@@ -292,7 +292,6 @@ public class ArenaManager {
         CompletableFutureUtil._catch(
                 Universe.get().addWorld(worldName, generatorType, "default")
                         .thenAccept(world -> {
-
                             String tpl = this.config.getTranslation("server.universe.addWorld.worldCreated");
                             String formatted = tpl == null ? "" : tpl.replace("{worldName}", worldName).replace("{generator}", generatorType).replace("{storage}", "default");
                             sender.sendMessage(MessageColorUtil.rawStyled(formatted));
@@ -329,6 +328,8 @@ public class ArenaManager {
                                             String tpl2 = this.config.getTranslation("hungergames.arena.generated");
                                             sender.sendMessage(MessageColorUtil.rawStyled(tpl2));
                                         }
+                                        world.getWorldConfig().setPvpEnabled(true);
+                                        world.getWorldConfig().markChanged();
                                         CompletableFuture.runAsync(() -> saveWorld(world), world).thenRun(() -> {
                                             String tpl3 = this.config.getTranslation("server.commands.world.save.savingDone");
                                             String formatted3 = tpl3 == null ? "" : tpl3.replace("{world}", world.getName());

@@ -41,9 +41,8 @@ public class CreateArenaCommand extends AbstractCommand {
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
         if (!sender.hasPermission("hungergames.admin")) {
-            sender.sendMessage(
-                    Message.raw("You dont have permission to use this command")
-            );
+            String tpl = arenaManager.getConfig().getTranslation("noPermission");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
         String worldName = this.arenaNameArg.get(context);
@@ -68,7 +67,7 @@ public class CreateArenaCommand extends AbstractCommand {
         playerWorld.execute(() -> {
             ISpawnProvider spawnProvider = arenaWorld.getWorldConfig().getSpawnProvider();
             Ref<EntityStore> reference = player.getReference();
-            if(reference == null) {
+            if (reference == null) {
                 sender.sendMessage(Message.raw("Unable to get your position"));
                 return;
             }

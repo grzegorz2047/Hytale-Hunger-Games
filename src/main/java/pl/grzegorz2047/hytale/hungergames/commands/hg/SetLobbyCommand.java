@@ -42,9 +42,8 @@ public class SetLobbyCommand extends AbstractCommand {
     protected CompletableFuture<Void> execute(@NonNullDecl CommandContext context) {
         CommandSender sender = context.sender();
         if (!sender.hasPermission("hungergames.admin")) {
-            sender.sendMessage(
-                    Message.raw("You don't have permission to use this command")
-            );
+            String tpl = arenaManager.getConfig().getTranslation("noPermission");
+            sender.sendMessage(MessageColorUtil.rawStyled(tpl));
             return null;
         }
 
