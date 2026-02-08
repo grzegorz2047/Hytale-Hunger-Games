@@ -18,6 +18,7 @@ public class MainConfig {
     private int startingArenaSeconds = 10;
     private int ingameArenaSeconds = 60;
     private boolean isHudEnabled = true;
+    private boolean shouldPrepareInventoryOnLobbyJoin = true;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -112,7 +113,8 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
-            .append(new KeyedCodec<>("IsHudEnabled", Codec.BOOLEAN), (config, f) -> config.isHudEnabled = f, (config) -> config.isHudEnabled).addValidator(Validators.nonNull()).documentation("IsHudEnabled").add()
+            .append(new KeyedCodec<>("ShouldPrepareInventoryOnLobbyJoin", Codec.BOOLEAN), (config, f) -> config.shouldPrepareInventoryOnLobbyJoin = f, (config) -> config.shouldPrepareInventoryOnLobbyJoin).addValidator(Validators.nonNull()).documentation("shouldPrepareInventoryOnLobbyJoin").add()
+            .append(new KeyedCodec<>("IsHudEnabled", Codec.BOOLEAN), (config, f) -> config.isHudEnabled = f, (config) -> config.isHudEnabled).addValidator(Validators.nonNull()).documentation("isHudEnabled").add()
             .append(new KeyedCodec<>("MinimumPlayersToStartArena", Codec.INTEGER), (config, f) -> config.minimumPlayersToStartArena = f, (config) -> config.minimumPlayersToStartArena).addValidator(Validators.nonNull()).documentation("minimumPlayersToStartArena").add()
             .append(new KeyedCodec<>("DeathmatchArenaSeconds", Codec.INTEGER), (config, f) -> config.deathmatchArenaSeconds = f, (config) -> config.deathmatchArenaSeconds).addValidator(Validators.nonNull()).documentation("deathmatchArenaSeconds").add()
             .append(new KeyedCodec<>("StartingArenaSeconds", Codec.INTEGER), (config, f) -> config.startingArenaSeconds = f, (config) -> config.startingArenaSeconds).addValidator(Validators.nonNull()).documentation("startingArenaSeconds").add()
@@ -152,5 +154,9 @@ public class MainConfig {
 
     public boolean isHudEnabled() {
         return isHudEnabled;
+    }
+
+    public boolean shouldPrepareInventoryOnLobbyJoin() {
+        return shouldPrepareInventoryOnLobbyJoin;
     }
 }

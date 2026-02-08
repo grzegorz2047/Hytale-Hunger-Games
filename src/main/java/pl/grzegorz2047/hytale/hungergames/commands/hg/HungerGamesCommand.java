@@ -4,6 +4,7 @@ import com.hypixel.hytale.protocol.GameMode;
 import com.hypixel.hytale.server.core.command.system.basecommands.AbstractCommandCollection;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
+import pl.grzegorz2047.hytale.hungergames.hud.ArenaListPage;
 
 /**
  * This is an example command that will simply print the name of the plugin in chat when used.
@@ -13,13 +14,14 @@ public class HungerGamesCommand extends AbstractCommandCollection {
     private final String pluginName;
     private final String pluginVersion;
     private final MainConfig mainConfig;
+    private final ArenaListPage arenaListPage;
 
-    public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager) {
-        this(pluginName, pluginVersion, arenaManager, null);
+    public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager, MainConfig config) {
+        this(pluginName, pluginVersion, arenaManager, null, null);
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
     }
 
-    public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager, MainConfig mainConfig) {
+    public HungerGamesCommand(String pluginName, String pluginVersion, ArenaManager arenaManager, MainConfig mainConfig,  ArenaListPage arenaListPage) {
         super("hg", "Main command for Hunger Games plugin");
         this.setPermissionGroups(GameMode.Adventure.toString(), GameMode.Creative.toString());
 
@@ -27,6 +29,7 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.pluginName = pluginName;
         this.pluginVersion = pluginVersion;
         this.mainConfig = mainConfig;
+        this.arenaListPage = arenaListPage;
 //        this.addSubCommand(new TeleportAllCommand());
         this.addSubCommand(new CreateArenaCommand("create", "creates raw arena to configure", arenaManager));
         this.addSubCommand(new DisableArenaCommand("disable", "disables arena", arenaManager));
@@ -35,6 +38,7 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.addSubCommand(new ForceStartArenaCommand("forcestart", "starts arena now", arenaManager));
         this.addSubCommand(new LeaveArenaCommand("leave", "leaves arena", arenaManager));
         this.addSubCommand(new JoinArenaCommand("join", "enters arena", arenaManager));
+        this.addSubCommand(new ListArenaCommand("list", "arena list", arenaManager, arenaListPage));
         this.addSubCommand(new LobbyCommand("lobby", "teleports to main world", arenaManager));
         this.addSubCommand(new SetLobbyCommand("setlobby", "sets the lobby spawn point for an arena", arenaManager, mainConfig));
         this.addSubCommand(new AddSpawnPointCommand("addspawn", "adds a spawn point at your current position", arenaManager));

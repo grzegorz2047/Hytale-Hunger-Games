@@ -532,14 +532,15 @@ public class ArenaManager {
 
     public void preparePlayerJoinedServer(Player player) {
         Inventory inventory = player.getInventory();
-        inventory.clear();
-        inventory.setActiveHotbarSlot((byte) 0);
         ItemContainer hotbar = inventory.getHotbar();
-        ItemStack arenaChooser = new ItemStack("Prototype_Tool_Book_Mana", 1);
-        hotbar.setItemStackForSlot((short) 0, arenaChooser);
 
-        player.getInventory().markChanged();
-
+        if (this.config.shouldPrepareInventoryOnLobbyJoin()) {
+            inventory.clear();
+            inventory.setActiveHotbarSlot((byte) 0);
+            ItemStack arenaChooser = new ItemStack("Prototype_Tool_Book_Mana", 1);
+            hotbar.setItemStackForSlot((short) 0, arenaChooser);
+            player.getInventory().markChanged();
+        }
 //        World defaultWorld = Universe.get().getDefaultWorld();
 //        World playerWorld = player.getWorld();
 //        if (defaultWorld == null || playerWorld == null || player.getReference() == null) {
