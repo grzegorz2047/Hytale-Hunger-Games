@@ -11,12 +11,12 @@ import java.util.HashMap;
 
 public class MainConfig {
 
-    private String[] itemsToFillChest = new String[]{"Armor_Iron_Chest:1", "Weapon_Sword_Frost:1", "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
+    private String[] itemsToFillChest = new String[]{"Armor_Iron_Chest:1", "Weapon_Sword_Runic:1", "Weapon_Sword_Crude:1", "Weapon_Sword_Cutlass:1", "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
     private HashMap<String, String> messages = new HashMap<>();
     private int minimumPlayersToStartArena = 2;
-    private int deathmatchArenaSeconds = 30;
+    private int deathmatchArenaSeconds = 60;
     private int startingArenaSeconds = 10;
-    private int ingameArenaSeconds = 30;
+    private int ingameArenaSeconds = 60;
     private boolean isHudEnabled = true;
 
     public MainConfig() {

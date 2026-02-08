@@ -15,6 +15,8 @@ import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
+import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
+import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -197,8 +199,8 @@ public class HgArena {
         }
     }
 
-    public boolean isPlayerInArena(Player player) {
-        return findHgPlayerByUuid(player.getUuid()) != null;
+    public boolean isPlayerInArena(UUID uuid) {
+        return findHgPlayerByUuid(uuid) != null;
     }
 
     public boolean forceStart() {
@@ -636,14 +638,15 @@ public class HgArena {
 
         try {
             PlayerRef playerRefFromUUID = Universe.get().getPlayer(uuid);
-            Player player = findPlayerInPlayerComponentsBag(playerWorld.getEntityStore().getStore(), playerRefFromUUID.getReference());
+            Store<EntityStore> store = playerWorld.getEntityStore().getStore();
+            Player player = findPlayerInPlayerComponentsBag(store, playerRefFromUUID.getReference());
             if (player == null) {
                 return;
             }
             int capacity = (playerSpawnPoints == null || playerSpawnPoints.isEmpty()) ? 1 : playerSpawnPoints.size();
 
             // Sprawdź czy gracz już jest w arenie
-            if (findHgPlayerByUuid(uuid) != null) {
+            if (isPlayerInArena(uuid)) {
                 return;
             }
             if (activePlayers.size() >= capacity) {
@@ -687,7 +690,14 @@ public class HgArena {
             Inventory inventory = player.getInventory();
             inventory.clear();
             inventory.markChanged();
+//            EntityStatMap statMap = (EntityStatMap) store.getComponent(playerRef, EntityStatMap.getComponentType());
 
+
+            EntityStatMap statMap = store.getComponent(reference, EntityStatMap.getComponentType());
+            if (statMap != null) {
+                statMap.maximizeStatValue(DefaultEntityStatTypes.getHealth());
+
+            }
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
             boolean isHudEnabled = this.config.isHudEnabled();
             World arenaWorld = getArenaWorld();

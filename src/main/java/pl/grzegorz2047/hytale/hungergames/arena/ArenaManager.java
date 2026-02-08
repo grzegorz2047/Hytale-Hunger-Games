@@ -584,7 +584,7 @@ public class ArenaManager {
     }
 
     public boolean isPlayerOnAnyArena(Player player) {
-        return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player));
+        return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player.getUuid()));
     }
 
 
@@ -639,5 +639,15 @@ public class ArenaManager {
 
     public Optional<HgPlayer> getGlobalKills(PlayerRef player) throws Exception {
         return playerRepository.findByUuid(player.getUuid());
+    }
+
+    public boolean isInArenaLobby(String arenaName, UUID uuid) {
+        if (!arenaExists(arenaName)) {
+            return false;
+        }
+        HgArena arena = this.getArena(arenaName);
+        arena.isPlayerInArena(uuid);
+        boolean arenaNotInGame = !arena.isIngame();
+        return arenaNotInGame;
     }
 }

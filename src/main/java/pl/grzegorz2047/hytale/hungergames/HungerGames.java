@@ -4,12 +4,8 @@ import au.ellie.hyui.builders.HyUIPage;
 import au.ellie.hyui.builders.PageBuilder;
 import au.ellie.hyui.html.TemplateProcessor;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
-import com.hypixel.hytale.component.Ref;
-import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.logger.HytaleLogger;
-import com.hypixel.hytale.protocol.InteractionChainData;
 import com.hypixel.hytale.protocol.InteractionType;
-import com.hypixel.hytale.protocol.packets.interaction.SyncInteractionChain;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
 import com.hypixel.hytale.server.core.entity.entities.Player;
@@ -19,7 +15,6 @@ import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.Config;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
@@ -33,8 +28,6 @@ import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractLib;
 import pl.grzegorz2047.hytale.lib.playerinteractlib.PlayerInteractionEvent;
 
 import javax.annotation.Nonnull;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -165,6 +158,7 @@ public class HungerGames extends JavaPlugin {
         new BreakBlockListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new DropItemListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         new DeathPlayerListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
+        new DamagePlayerListenerSystem(this, arenaManager).register(getEntityStoreRegistry());
         this.getCommandRegistry().registerCommand(new HungerGamesCommand(this.getName(), this.getManifest().getVersion().toString(), arenaManager, config.get()));
     }
 
