@@ -19,15 +19,14 @@ public class LobbyHud extends CustomUIHud {
     @Override
     protected void build(@NonNullDecl UICommandBuilder uiCommandBuilder) {
         uiCommandBuilder.append("Huds/Lobby.ui");
-        uiCommandBuilder.set("#LobbyWelcome.Text", this.message);
-        uiCommandBuilder.set("#LobbyWelcome.Style.FontSize", this.fontSize);
+        uiCommandBuilder.set("#Title.Text", this.message);
         uiCommandBuilder.set("#LobbyStats.Text", this.stats);
     }
 
     public void setMessage(String message) {
         this.message = message;
         UICommandBuilder builder = new UICommandBuilder();
-        builder.set("#LobbyWelcome.Text", this.message);
+        builder.set("#Title.Text", this.message);
         builder.set("#LobbyStats.Text", this.stats);
         this.update(false, builder);
     }
@@ -35,7 +34,7 @@ public class LobbyHud extends CustomUIHud {
     public void setKillStats(String stats) {
         this.stats = stats;
         UICommandBuilder builder = new UICommandBuilder();
-        builder.set("#LobbyWelcome.Text", this.message);
+        builder.set("#Title.Text", this.message);
         builder.set("#LobbyStats.Text", this.stats);
         this.update(false, builder);
     }

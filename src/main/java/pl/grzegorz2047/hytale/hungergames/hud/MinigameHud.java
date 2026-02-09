@@ -17,7 +17,8 @@ public class MinigameHud extends CustomUIHud {
     private final int fontSize;
     private String arenaName = "arenaName";
     private String numOfActivePlayers = "0/0";
-     private String playerKills = "kills: 0";
+    private String playerKills = "kills: 0";
+    private String message = "";
 
     public MinigameHud(PlayerRef playerRef, int fontSize, int widthClockArea, boolean backgroundColorEnabled) {
         super(playerRef);
@@ -42,8 +43,9 @@ public class MinigameHud extends CustomUIHud {
         uiCommandBuilder.set("#ArenaTimer.Style.FontSize", this.fontSize);
         uiCommandBuilder.set("#ArenaTimer.Text", this.time);
         uiCommandBuilder.set("#ArenaName.Text", this.arenaName);
-        uiCommandBuilder.set("#ArenaNumberOfPlayers.Text" , this.numOfActivePlayers);
+        uiCommandBuilder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         uiCommandBuilder.set("#PlayerKills.Text", this.playerKills);
+        uiCommandBuilder.set("#Title.Text", this.message);
         Anchor data = new Anchor();
         data.setWidth(Value.of(this.widthClockArea));
         data.setHeight(Value.of(CONTAINER_HEIGHT));
@@ -53,6 +55,13 @@ public class MinigameHud extends CustomUIHud {
                 groupId + ".Anchor",
                 data
         );
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#Title.Text", this.message);
+        this.update(false, builder);
     }
 
     public void setTimeText(String timeText) {

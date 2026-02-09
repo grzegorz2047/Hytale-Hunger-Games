@@ -1,9 +1,9 @@
 Group #LobbyHud {
     Background: #000000(0.6);
-  Anchor: (Width: 400, Height: 300, Top: 300, Right: 55);
-    Label #LobbyWelcome {
-        Anchor: (Width: 400, Height: 40, Top: 24, Left: 0);
-        Text: "Example.com";
+    Anchor: (Width: 300, Height: 100, Top: 400, Right: 55);
+    Label #Title {
+        Anchor: (Width: 300, Height: 40, Top: 0, Left: 0);
+        Text: "Survival Games";
         Style: (Wrap: true, HorizontalAlignment: Center, VerticalAlignment: Center,
           FontSize: 24,
           TextColor: #FFFFFF(0.95),
@@ -11,7 +11,7 @@ Group #LobbyHud {
         );
     }
     Label #LobbyStats {
-        Anchor: (Width: 400, Height: 40, Top: 90, Left: 32);
+        Anchor: (Width: 400, Height: 40, Top: 12 * 3, Left: 24);
         Text: "";
         Style: (Wrap: true,
           FontSize: 24,

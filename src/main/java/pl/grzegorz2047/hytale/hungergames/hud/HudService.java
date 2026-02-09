@@ -22,7 +22,7 @@ public class HudService {
     }
 
     public void initLobbyHud(HudManager hudManager, PlayerRef playerRef, String kills) {
-        String tpl = config.getTranslation("hungergames.hud.lobby.welcome");
+        String tpl = config.getTranslation("hungergames.hud.title");
         LobbyHud lobbyHud = new LobbyHud(playerRef, 24, tpl);
         hudManager.setCustomHud(playerRef, lobbyHud);
         lobbyHud.setKillStats(kills);
@@ -39,6 +39,8 @@ public class HudService {
             hud.setNumOfActivePlayers(numOfActivePlayers);
             String time = config.getTranslation("hungergames.hud.time").replace("{time}", "00:00");
             hud.setTimeText(time);
+            String title = config.getTranslation("hungergames.hud.title");
+            hud.setMessage(title);
         }
     }
 

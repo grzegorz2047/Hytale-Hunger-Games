@@ -71,7 +71,7 @@ public class MainConfig {
                     "hungergames.arena.notPlaying:There is no arena you are playing on",
                     "hungergames.arena.alreadyIngame:Arena {arenaName} is already ingame",
                     "hungergames.death.playerBroadcast:Player died: {player}",
-                    "hungergames.hud.lobby.welcome:Example.com",
+                    "hungergames.hud.title:Survival Games",
                     "hungergames.hud.time:time:  {time}",
                     "hungergames.hud.playersLeft:active players:  ({activePlayers}/{maxPlayers})",
                     "hungergames.hud.arena:arena name:  {arenaName}",
