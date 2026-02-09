@@ -77,6 +77,9 @@ public class PlayerListeners {
                     if (globalKills.isPresent()) {
                         String kills = config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
                         hudService.initLobbyHud(player.getHudManager(), playerRef, kills);
+                    }else {
+                        String kills = config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(0));
+                        hudService.initLobbyHud(player.getHudManager(), playerRef, kills);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);

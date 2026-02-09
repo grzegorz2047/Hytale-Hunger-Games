@@ -58,7 +58,7 @@ public class CreateArenaCommand extends AbstractCommand {
         }
         if (world == null) {
             String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.worldNotFound");
-            String formatted = tpl == null ? "" : tpl.replace("{worldName}", worldName);
+            String formatted = tpl.replace("{worldName}", worldName);
             sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             return null;
         }
@@ -77,8 +77,8 @@ public class CreateArenaCommand extends AbstractCommand {
             Vector3d lobbySpawnPoint = spawnPoint.getPosition();
             boolean arenaCreated = arenaManager.createArena(worldName, new ArrayList<>(), lobbySpawnPoint);
             if (arenaCreated) {
-                String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.created").replace("{arenaName}", worldName);
-                String formatted = tpl == null ? "" : tpl.replace("{arenaName}", worldName);
+                String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.created");
+                String formatted = tpl.replace("{arenaName}", worldName);
                 sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             } else {
                 String tpl = arenaManager.getConfig().getTranslation("hungergames.arena.creationFailed");

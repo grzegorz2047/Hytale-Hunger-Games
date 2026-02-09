@@ -182,8 +182,8 @@ public class HgArena {
         }
 
         activePlayers.remove(hgPlayer);
-        String tpl = this.config.getTranslation("hungergames.arena.left");
-        playerRef.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{worldName}", this.worldName)));
+        String tpl = this.config.getTranslation("hungergames.arena.left").replace("{arenaName}", worldName);
+        playerRef.sendMessage(MessageColorUtil.rawStyled(tpl.replace("{worldName}", this.worldName)));
         getArenaWorld().execute(() -> teleportToMainLobby(playerRef.getReference(), playerRef.getUsername()));
 
         synchronized (activePlayers) {
@@ -254,7 +254,7 @@ public class HgArena {
             inventory.markChanged();
         }
         teleportPlayersToTheSpawnPoints(playerSpawnPoints);
-        String translation = config.getTranslation("hungergames.arena.arenaStarted");
+        String translation = config.getTranslation("hungergames.arena.arenaStarted").replace("{arenaName}", worldName);
 
         String input = "The game has been force-started!";
         if (isForced) {
@@ -646,7 +646,7 @@ public class HgArena {
             }
 
             if (activePlayers.size() >= capacity) {
-                String tpl = this.config.getTranslation("hungergames.arena.full");
+                String tpl = this.config.getTranslation("hungergames.arena.full").replace("{arenaName}", worldName);
                 player.sendMessage(MessageColorUtil.rawStyled(tpl));
                 return;
             }
@@ -690,7 +690,7 @@ public class HgArena {
 
                 addTeleportTask(reference, arenaWorld, this.arenaLobbySpawnLocation);
 
-                String tplJoined = this.config.getTranslation("hungergames.arena.joined");
+                String tplJoined = this.config.getTranslation("hungergames.arena.joined").replace("{arenaName}", worldName);
                 String tplplayerJoined = this.config.getTranslation("hungergames.arena.numplayerjoined");
                 broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tplplayerJoined == null ? "" : tplplayerJoined.replace("{numberOfPlayers}", String.valueOf(this.activePlayers.size())).replace("{maxNumberOfPlayersInArena}", String.valueOf(this.playerSpawnPoints.size())).replace("{arenaName}", this.worldName)));
                 player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));

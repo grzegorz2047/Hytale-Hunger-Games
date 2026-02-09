@@ -268,7 +268,7 @@ public class ArenaManager {
 
     public void joinArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
-            String tpl = this.config.getTranslation("hungergames.arena.notFound");
+            String tpl = this.config.getTranslation("hungergames.arena.notFound").replace("{arenaName}", arenaName);
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
             return;
         }
@@ -347,7 +347,7 @@ public class ArenaManager {
                                     .thenRun(() -> {
                                         boolean isCreated = createArena(worldName, spawnPoints, lobbySpawnLocation);
                                         if (isCreated) {
-                                            String tpl2 = this.config.getTranslation("hungergames.arena.generated");
+                                            String tpl2 = this.config.getTranslation("hungergames.arena.generated").replace("{arenaName}", worldName);
                                             sender.sendMessage(MessageColorUtil.rawStyled(tpl2));
                                         }
                                         world.getWorldConfig().setPvpEnabled(true);
