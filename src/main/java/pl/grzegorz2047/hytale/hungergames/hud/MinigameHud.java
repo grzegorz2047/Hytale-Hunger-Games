@@ -10,15 +10,14 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 public class MinigameHud extends CustomUIHud {
     private static final int CONTAINER_RIGHT = 55;
     private final int widthClockArea;
-    private final int CONTAINER_HEIGHT = 300;
+    private final int CONTAINER_HEIGHT = 150;
     private final int CONTAINER_TOP = 300;
     private final boolean backgroundColorEnabled;
-    private volatile String time = "Time: 00:00";
+    private volatile String time = "00:00";
     private final int fontSize;
-    private String arenaName = "Arena name: None";
-    private String numOfActivePlayers = "Players left: 0";
-    private String killFeedText = "Kills: 0";
-    private String playerKills = "Your Kills: 0";
+    private String arenaName = "arenaName";
+    private String numOfActivePlayers = "0/0";
+     private String playerKills = "kills: 0";
 
     public MinigameHud(PlayerRef playerRef, int fontSize, int widthClockArea, boolean backgroundColorEnabled) {
         super(playerRef);
@@ -34,11 +33,12 @@ public class MinigameHud extends CustomUIHud {
         String groupId;
         if (backgroundColorEnabled) {
             groupId = "#SimpleHudObjWithOpacity";
-            uiCommandBuilder.remove("#SimpleHudObj");
         } else {
             groupId = "#SimpleHudObj";
             uiCommandBuilder.remove("#SimpleHudObjWithOpacity");
         }
+        uiCommandBuilder.set("#ArenaName.Style.FontSize", this.fontSize);
+        uiCommandBuilder.set("#ArenaNumberOfPlayers.Style.FontSize", this.fontSize);
         uiCommandBuilder.set("#ArenaTimer.Style.FontSize", this.fontSize);
         uiCommandBuilder.set("#ArenaTimer.Text", this.time);
         uiCommandBuilder.set("#ArenaName.Text", this.arenaName);

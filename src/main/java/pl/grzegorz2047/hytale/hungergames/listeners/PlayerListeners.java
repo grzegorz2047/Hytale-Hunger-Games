@@ -70,7 +70,8 @@ public class PlayerListeners {
         World world = event.getWorld();
         if (world.equals(Universe.get().getDefaultWorld())) {
             boolean isHudEnabled = config.get().isHudEnabled();
-            if (isHudEnabled) {
+            boolean isLobbyHudEnabled = config.get().isLobbyHudEnabled();
+            if (isHudEnabled && isLobbyHudEnabled) {
                 try {
                     var globalKills = arenaManager.getGlobalKills(playerRef);
                     if (globalKills.isPresent()) {

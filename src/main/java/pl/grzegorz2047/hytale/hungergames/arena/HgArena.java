@@ -16,6 +16,7 @@ import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
+import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
@@ -73,6 +74,12 @@ public class HgArena {
             return;
         }
         activePlayers.remove(hgPlayer);
+    }
+
+    public String getArenaPlayersStat() {
+        String playersStatLabel = getTranslationOrDefault("hungergames.hud.playersLeft", "arena players");
+        return playersStatLabel.replace("{activePlayers}", String.valueOf(this.activePlayers.size()))
+                .replace("{maxPlayers}", String.valueOf(this.playerSpawnPoints.size()));
     }
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
@@ -414,6 +421,12 @@ public class HgArena {
                 Ref<EntityStore> refForTeleport = p.getReference();
                 // walidacja referencji przed użyciem
                 try {
+                    p.getHudManager().setCustomHud(p.getPlayerRef(), new CustomUIHud(p.getPlayerRef()) {
+                        @Override
+                        protected void build(@NonNullDecl UICommandBuilder uiCommandBuilder) {
+
+                        }
+                    });
                     teleportToMainLobby(refForTeleport, p.getDisplayName());
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
@@ -472,19 +485,17 @@ public class HgArena {
         if (customHud instanceof MinigameHud customHudMinigame) {
             // Pobierz gracza aby uzyskać jego liczbę zabójstw
             HgPlayer hgPlayer = findHgPlayerByUuid(playerUuid);
-            String playerKillsLabel = getTranslationOrDefault("hungergames.hud.yourKills", "Your Kills");
-            String playerKillsText = playerKillsLabel + ": " + (hgPlayer != null ? hgPlayer.getKills() : 0);
+            String playerKills = getTranslationOrDefault("hungergames.hud.yourKills", "Your Kills").replace("{kills}",String.valueOf((hgPlayer != null ? hgPlayer.getKills() : 0)));
 
             // Aktualizuj główne informacje
-            String timeLabel = getTranslationOrDefault("hungergames.hud.time", "Time");
-            String playersLabel = getTranslationOrDefault("hungergames.hud.playersLeft", "Players left");
-            String arenaLabel = getTranslationOrDefault("hungergames.hud.arena", "Arena");
-            customHudMinigame.setTimeText(timeLabel + ": " + formatHHMMSS(currentCountdown));
-            customHudMinigame.setNumOfActivePlayers(playersLabel + ": " + this.activePlayers.size());
-            customHudMinigame.setArenaName(arenaLabel + ": " + this.worldName);
+            String arenaTime = getTranslationOrDefault("hungergames.hud.time", "time").replace("{time}", formatHHMMSS(currentCountdown));
+            String arenaName = getTranslationOrDefault("hungergames.hud.arena", "arena").replace("{arenaName}", this.worldName);
+            customHudMinigame.setTimeText(arenaTime);
+            customHudMinigame.setNumOfActivePlayers(this.getArenaPlayersStat());
+            customHudMinigame.setArenaName(arenaName);
 
             // Ustaw liczbę zabójstw gracza
-            customHudMinigame.setPlayerKills(playerKillsText);
+            customHudMinigame.setPlayerKills(playerKills);
         }
     }
 

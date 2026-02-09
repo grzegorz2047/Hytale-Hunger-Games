@@ -75,10 +75,6 @@ public class SetLobbyCommand extends AbstractCommand {
         }
 
         Vector3d currentPosition = player.getTransformComponent().getPosition();
-        if (currentPosition == null) {
-            sender.sendMessage(Message.raw("Unable to get your position"));
-            return null;
-        }
 
         arenaManager.setLobbySpawnLocation(arenaName, currentPosition);
 

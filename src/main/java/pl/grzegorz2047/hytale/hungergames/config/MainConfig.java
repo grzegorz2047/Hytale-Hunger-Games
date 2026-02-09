@@ -20,6 +20,7 @@ public class MainConfig {
     private boolean isHudEnabled = true;
     private boolean shouldPrepareInventoryOnLobbyJoin = true;
     private boolean forceLobbySpawn = true;
+    private boolean lobbyHudEnabled = true;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -39,11 +40,11 @@ public class MainConfig {
                     "hungergames.arena.notFound:Arena {arenaName} doesn't exist.",
                     "hungergames.arena.notActive:Arena {arenaName} is not active.",
                     "hungergames.arena.alreadyOnArena:You are already on an arena. Leave this first.",
-                    "hungergames.arena.generated:Arena generated!",
+                    "hungergames.arena.generated:Arena {arenaName} generated!",
                     "hungergames.arena.joined:You have joined the arena: {worldName}",
                     "hungergames.arena.numplayerjoined:Player joined {arenaName} {numberOfPlayers}/{maxNumberOfPlayersInArena}",
                     "hungergames.arena.left:You have left the arena: {worldName}",
-                    "hungergames.hud.lobby.globalKills:Your kills: {kills}",
+                    "hungergames.hud.lobby.globalKills:Global kills: {kills}",
                     "hungergames.arena.full:Arena is full",
                     "hungergames.arena.gameEndedWinner: Game ended! Winner: {player}",
                     "hungergames.arena.playerLeftBroadcast:Player left the arena. Current players: {count}",
@@ -69,14 +70,12 @@ public class MainConfig {
                     "hungergames.arena.disabled:Arena {arenaName} disabled",
                     "hungergames.arena.notPlaying:There is no arena you are playing on",
                     "hungergames.arena.alreadyIngame:Arena {arenaName} is already ingame",
-                    "hungergames.death.playerBroadcast:Death player: {player}",
+                    "hungergames.death.playerBroadcast:Player died: {player}",
                     "hungergames.hud.lobby.welcome:Example.com",
-                    "hungergames.hud.time:Time",
-                    "hungergames.hud.playersLeft:Players left",
-                    "hungergames.hud.arena:Arena",
-                    "hungergames.hud.killFeed:Kill Feed",
-                    "hungergames.hud.killFeedEmpty:-",
-                    "hungergames.hud.yourKills:Your Kills",
+                    "hungergames.hud.time:time:  {time}",
+                    "hungergames.hud.playersLeft:active players:  ({activePlayers}/{maxPlayers})",
+                    "hungergames.hud.arena:arena name:  {arenaName}",
+                    "hungergames.hud.yourKills:kills:   {kills}",
                     "hungergames.command.onlyForPlayer:This command can only be used by a player",
                     "hungergames.command.arenaDoesNotExist:Arena '{arenaName}' does not exist",
                     "hungergames.command.cannotModifyActiveArena:<color=#FF0000>Cannot modify arena while it is active or in game</color>",
@@ -114,6 +113,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("LobbyHudEnabled", Codec.BOOLEAN), (config, f) -> config.lobbyHudEnabled = f, (config) -> config.lobbyHudEnabled).addValidator(Validators.nonNull()).documentation("lobbyHudEnabled").add()
             .append(new KeyedCodec<>("ForceLobbySpawn", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawn = f, (config) -> config.forceLobbySpawn).addValidator(Validators.nonNull()).documentation("forceLobbySpawn").add()
             .append(new KeyedCodec<>("ShouldPrepareInventoryOnLobbyJoin", Codec.BOOLEAN), (config, f) -> config.shouldPrepareInventoryOnLobbyJoin = f, (config) -> config.shouldPrepareInventoryOnLobbyJoin).addValidator(Validators.nonNull()).documentation("shouldPrepareInventoryOnLobbyJoin").add()
             .append(new KeyedCodec<>("IsHudEnabled", Codec.BOOLEAN), (config, f) -> config.isHudEnabled = f, (config) -> config.isHudEnabled).addValidator(Validators.nonNull()).documentation("isHudEnabled").add()
@@ -164,5 +164,9 @@ public class MainConfig {
 
     public boolean forceLobbySpawn() {
         return forceLobbySpawn;
+    }
+
+    public boolean isLobbyHudEnabled() {
+        return lobbyHudEnabled;
     }
 }

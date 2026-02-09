@@ -27,6 +27,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.universe.world.storage.component.ChunkSavingSystems;
 import com.hypixel.hytale.server.core.universe.world.worldgen.provider.IWorldGenProvider;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
+import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.arena.stat.ArenaStat;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.hud.HudService;
@@ -43,6 +44,8 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
+
+import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
 
 /*
 ...existing code...
@@ -155,7 +158,7 @@ public class ArenaManager {
             hgArena.join(player.getWorld(), player.getUuid());
 
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
-            hudService.initArenaScoreboard(arenaName, player, playerRef);
+            hudService.initArenaScoreboard(arenaName, player, playerRef, hgArena.getArenaPlayersStat());
             hgArena.forceStart();
         });
 
@@ -288,7 +291,7 @@ public class ArenaManager {
 
         arena.join(player.getWorld(), player.getUuid());
         PlayerRef playerRef = player.getPlayerRef();
-        hudService.initArenaScoreboard(arenaName, player, playerRef);
+        hudService.initArenaScoreboard(arenaName, player, playerRef, arena.getArenaPlayersStat());
 
     }
 
@@ -600,9 +603,19 @@ public class ArenaManager {
     }
 
     public void playerLeft(PlayerRef playerRef) {
+        hudService.resetHud(playerRef);
+
         this.listOfArenas.forEach((_, value) -> value.playerLeft(playerRef));
     }
-
+    @NullableDecl
+    private static Player getPlayer(PlayerRef playerRef) {
+        Player player = null;
+        Ref<EntityStore> reference = playerRef.getReference();
+        if (reference != null) {
+            player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
+        }
+        return player;
+    }
     public boolean isPlayerOnAnyArena(Player player) {
         return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player.getUuid()));
     }
