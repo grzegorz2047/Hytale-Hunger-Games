@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import pl.grzegorz2047.hytale.hungergames.HungerGames;
 import pl.grzegorz2047.hytale.hungergames.arena.ArenaManager;
+import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 
 public class DropItemListenerSystem extends EntityEventSystem<EntityStore, DropItemEvent.Drop> {
     private final HungerGames hungerGames;
@@ -36,10 +37,10 @@ public class DropItemListenerSystem extends EntityEventSystem<EntityStore, DropI
         ItemStack itemStack = event.getItemStack();
         String tpl = arenaManager.getConfig().getTranslation("hungergames.item.id");
         String formatted = tpl == null ? itemStack.getItemId() : tpl.replace("{id}", itemStack.getItemId());
-        player.sendMessage(pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil.rawStyled(formatted));
+        player.sendMessage(MessageColorUtil.rawStyledStack(formatted));
         if(itemStack.getItemId().equalsIgnoreCase("Prototype_Tool_Book_Mana")) {
             String tpl2 = arenaManager.getConfig().getTranslation("hungergames.item.cannotDrop");
-            player.sendMessage(pl.grzegorz2047.hytale.lib.playerinteractlib.message.MessageColorUtil.rawStyled(tpl2));
+            player.sendMessage(MessageColorUtil.rawStyledStack(tpl2));
             event.setCancelled(true);
             player.getInventory().markChanged();
         }
