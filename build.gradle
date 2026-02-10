@@ -9,7 +9,6 @@ import org.gradle.internal.os.OperatingSystem
 repositories {
     mavenCentral()
     maven { url 'https://maven.hytale-mods.dev/releases' }
-
 }
 
 ext {

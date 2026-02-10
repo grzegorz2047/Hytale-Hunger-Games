@@ -11,16 +11,24 @@ import java.util.HashMap;
 
 public class MainConfig {
 
-    private String[] itemsToFillChest = new String[]{"Weapon_Arrow_Crude:5", "Weapon_Shortbow_Combat:1", "Armor_Iron_Chest:1",  "Weapon_Sword_Crude:1",  "Weapon_Shield_Cobalt:1", "Food_Bread:2"};
-    private HashMap<String, String> messages = new HashMap<>();
+    private String[] itemsToFillChest = new String[] {
+            "Weapon_Arrow_Crude:5",
+            "Weapon_Shortbow_Combat:1",
+            "Armor_Iron_Chest:1",
+            "Weapon_Sword_Crude:1",
+            "Weapon_Shield_Cobalt:1",
+            "Food_Bread:2"
+    };
+    private HashMap<String, String> messages;
     private int minimumPlayersToStartArena = 2;
-    private int deathmatchArenaSeconds = 60;
-    private int startingArenaSeconds = 10;
-    private int ingameArenaSeconds = 60;
+    private int deathmatchArenaSeconds = 360;
+    private int startingArenaSeconds = 20;
+    private int ingameArenaSeconds = 360;
     private boolean isHudEnabled = true;
-    private boolean shouldPrepareInventoryOnLobbyJoin = true;
+    private boolean shouldPrepareInventoryOnLobbyJoin = false;
     private boolean forceLobbySpawn = true;
-    private boolean lobbyHudEnabled = true;
+    private boolean forceLobbySpawnEvenIfOnLobbyWorld = false;
+    private boolean lobbyHudEnabled = false;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -113,6 +121,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("ForceLobbySpawnEvenIfOnLobbyWorld", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawnEvenIfOnLobbyWorld = f, (config) -> config.forceLobbySpawnEvenIfOnLobbyWorld).addValidator(Validators.nonNull()).documentation("forceLobbySpawnEvenIfOnLobbyWorld").add()
             .append(new KeyedCodec<>("LobbyHudEnabled", Codec.BOOLEAN), (config, f) -> config.lobbyHudEnabled = f, (config) -> config.lobbyHudEnabled).addValidator(Validators.nonNull()).documentation("lobbyHudEnabled").add()
             .append(new KeyedCodec<>("ForceLobbySpawn", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawn = f, (config) -> config.forceLobbySpawn).addValidator(Validators.nonNull()).documentation("forceLobbySpawn").add()
             .append(new KeyedCodec<>("ShouldPrepareInventoryOnLobbyJoin", Codec.BOOLEAN), (config, f) -> config.shouldPrepareInventoryOnLobbyJoin = f, (config) -> config.shouldPrepareInventoryOnLobbyJoin).addValidator(Validators.nonNull()).documentation("shouldPrepareInventoryOnLobbyJoin").add()
@@ -168,5 +177,9 @@ public class MainConfig {
 
     public boolean isLobbyHudEnabled() {
         return lobbyHudEnabled;
+    }
+
+    public boolean isForceLobbySpawnEvenIfOnLobbyWorld() {
+        return forceLobbySpawnEvenIfOnLobbyWorld;
     }
 }

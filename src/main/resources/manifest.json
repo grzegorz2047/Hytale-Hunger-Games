@@ -1,7 +1,7 @@
 {
-    "Group": "Hytale",
+    "Group": "grzegorz2047",
     "Name": "HungerGames",
-    "Version": "0.1.4",
+    "Version": "0.1.6",
     "Description": "Player Hunger games minigames in hytale!",
     "Authors": [
         {
@@ -11,7 +11,8 @@
     "Website": "grzegorz2047.pl",
     "ServerVersion": "*",
     "Dependencies": {
-        "Hytale:PlayerInteractLib": "*"
+        "Hytale:PlayerInteractLib": "*",
+        "Ellie:HyUI": "*"
     },
     "OptionalDependencies": {
         "Buuz135:MultipleHUD": "*"

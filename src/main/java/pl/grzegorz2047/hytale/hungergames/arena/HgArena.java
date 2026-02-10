@@ -26,6 +26,7 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.db.PlayerRepository;
+import pl.grzegorz2047.hytale.hungergames.hud.HudService;
 import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
 import pl.grzegorz2047.hytale.hungergames.message.MessageColorUtil;
 import pl.grzegorz2047.hytale.hungergames.teleport.LobbyTeleporter;
@@ -421,12 +422,8 @@ public class HgArena {
                 Ref<EntityStore> refForTeleport = p.getReference();
                 // walidacja referencji przed użyciem
                 try {
-                    p.getHudManager().setCustomHud(p.getPlayerRef(), new CustomUIHud(p.getPlayerRef()) {
-                        @Override
-                        protected void build(@NonNullDecl UICommandBuilder uiCommandBuilder) {
+                    HudService.resetHud(p.getPlayerRef());
 
-                        }
-                    });
                     teleportToMainLobby(refForTeleport, p.getDisplayName());
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));

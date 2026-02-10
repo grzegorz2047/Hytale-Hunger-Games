@@ -6,6 +6,7 @@ import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.event.EventRegistry;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.entity.entities.Player;
+import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
 import com.hypixel.hytale.server.core.event.events.player.*;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.component.TransformComponent;
@@ -74,12 +75,13 @@ public class PlayerListeners {
             if (isHudEnabled && isLobbyHudEnabled) {
                 try {
                     var globalKills = arenaManager.getGlobalKills(playerRef);
+                    HudManager hudManager = player.getHudManager();
                     if (globalKills.isPresent()) {
                         String kills = config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(globalKills.get().getGlobalKills()));
-                        hudService.initLobbyHud(player.getHudManager(), playerRef, kills);
-                    }else {
+                        hudService.initLobbyHud(hudManager, player, playerRef, kills);
+                    } else {
                         String kills = config.get().getTranslation("hungergames.hud.lobby.globalKills").replace("{kills}", String.valueOf(0));
-                        hudService.initLobbyHud(player.getHudManager(), playerRef, kills);
+                        hudService.initLobbyHud(hudManager, player, playerRef, kills);
                     }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
@@ -123,6 +125,10 @@ public class PlayerListeners {
         Holder<EntityStore> holder = event.getHolder();
 
         if (config.get().forceLobbySpawn()) {
+            boolean isAllowedToBeFarFromLobbySpawnAndInLobbyWorld = event.getWorld().equals(Universe.get().getDefaultWorld()) && !config.get().isForceLobbySpawnEvenIfOnLobbyWorld();
+            if (isAllowedToBeFarFromLobbySpawnAndInLobbyWorld) {
+                return;
+            }
             event.setWorld(Universe.get().getDefaultWorld());
             holder.removeComponent(TransformComponent.getComponentType());
         }

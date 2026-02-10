@@ -1,9 +1,13 @@
 package pl.grzegorz2047.hytale.hungergames.hud;
 
+import com.buuz135.mhud.MultipleHUD;
+import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.entity.entities.player.hud.HudManager;
+import com.hypixel.hytale.server.core.plugin.PluginBase;
+import com.hypixel.hytale.server.core.plugin.PluginManager;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
@@ -16,15 +20,23 @@ import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findP
 public class HudService {
 
     private final MainConfig config;
+    private final PluginBase multipleHud;
 
     public HudService(MainConfig config) {
         this.config = config;
+        multipleHud = PluginManager.get().getPlugin(PluginIdentifier.fromString("Buuz135:MultipleHUD"));
     }
 
-    public void initLobbyHud(HudManager hudManager, PlayerRef playerRef, String kills) {
+    public void initLobbyHud(HudManager hudManager, Player player, PlayerRef playerRef, String kills) {
         String tpl = config.getTranslation("hungergames.hud.title");
         LobbyHud lobbyHud = new LobbyHud(playerRef, 24, tpl);
-        hudManager.setCustomHud(playerRef, lobbyHud);
+        if (multipleHud == null) {
+//            this.playersHud.put(playerRef, hud);
+            hudManager.setCustomHud(playerRef, lobbyHud);
+        } else {
+            MultipleHUD.getInstance().setCustomHud(player, playerRef, "HungerGames2047_lobby", lobbyHud);
+//            this.playersHud.put(playerRef, hud);
+        }
         lobbyHud.setKillStats(kills);
     }
 
@@ -34,7 +46,15 @@ public class HudService {
 
         if (isHudEnabled) {
             MinigameHud hud = new MinigameHud(playerRef, 24, 300, true);
-            player.getHudManager().setCustomHud(playerRef, hud);
+            if (multipleHud == null) {
+//            this.playersHud.put(playerRef, hud);
+                player.getHudManager().setCustomHud(playerRef, hud);
+
+            } else {
+                MultipleHUD.getInstance().setCustomHud(player, playerRef, "HungerGames2047_arena_scoreboard", hud);
+//            this.playersHud.put(playerRef, hud);
+            }
+
             hud.setArenaName(arenaNameHud);
             hud.setNumOfActivePlayers(numOfActivePlayers);
             String time = config.getTranslation("hungergames.hud.time").replace("{time}", "00:00");
@@ -44,15 +64,23 @@ public class HudService {
         }
     }
 
-    public void resetHud(PlayerRef playerRef) {
+    public static void resetHud(PlayerRef playerRef) {
         Player player = getPlayer(playerRef);
         HudManager hudManager = player.getHudManager();
-        hudManager.setCustomHud(playerRef, new CustomUIHud(playerRef) {
-            @Override
-            protected void build(@NonNullDecl UICommandBuilder uiCommandBuilder) {
+        PluginBase multipleHud = PluginManager.get().getPlugin(PluginIdentifier.fromString("Buuz135:MultipleHUD"));
+        if (multipleHud == null) {
+//            this.playersHud.put(playerRef, hud);
+            hudManager.setCustomHud(playerRef, new CustomUIHud(playerRef) {
+                @Override
+                protected void build(@NonNullDecl UICommandBuilder uiCommandBuilder) {
 
-            }
-        });
+                }
+            });
+        } else {
+            MultipleHUD.getInstance().hideCustomHud(player, "HungerGames2047_arena_scoreboard");
+//            this.playersHud.put(playerRef, hud);
+        }
+
     }
 
     @NullableDecl
