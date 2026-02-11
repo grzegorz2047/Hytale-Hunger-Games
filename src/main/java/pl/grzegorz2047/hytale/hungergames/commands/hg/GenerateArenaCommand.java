@@ -1,6 +1,5 @@
 package pl.grzegorz2047.hytale.hungergames.commands.hg;
 
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandSender;
@@ -21,7 +20,10 @@ public class GenerateArenaCommand extends AbstractCommand {
     @Nonnull
     private final RequiredArg<String> arenaNameArg;
     private final OptionalArg<Integer> numberOfSpawnPointsArg;
-    private final OptionalArg<Integer> radiusArg;
+    private final OptionalArg<Integer> centerRadiusArg;
+    private final OptionalArg<Integer> barrierRadiusArg;
+    private final OptionalArg<Integer> barrierHeightArg;
+    private final OptionalArg<Boolean> generateHillArg;
 //    private final OptionalArg<Boolean> withWorldArg;
     private final ArenaManager arenaManager;
 
@@ -29,7 +31,10 @@ public class GenerateArenaCommand extends AbstractCommand {
         super(name, description);
         this.arenaNameArg = this.withRequiredArg("arenaName", "creates arena", ArgTypes.STRING);
         this.numberOfSpawnPointsArg = this.withOptionalArg("numberOfSpawnPoints", "number of spawn points", ArgTypes.INTEGER);
-        this.radiusArg = this.withOptionalArg("radius", "radius for spawn points", ArgTypes.INTEGER);
+        this.centerRadiusArg = this.withOptionalArg("centerRadius", "radius for spawn points", ArgTypes.INTEGER);
+        this.barrierRadiusArg = this.withOptionalArg("barrierRadius", "radius for barrier walls", ArgTypes.INTEGER);
+        this.barrierHeightArg = this.withOptionalArg("barrierHeight", "wall height for barrier walls", ArgTypes.INTEGER);
+        this.generateHillArg = this.withOptionalArg("generateHill", "generates middle hill walls", ArgTypes.BOOLEAN);
         this.arenaManager = arenaManager;
     }
 
@@ -47,7 +52,7 @@ public class GenerateArenaCommand extends AbstractCommand {
         Integer numberOfSpawnPointArg = this.numberOfSpawnPointsArg.get(context);
         int numberOfSpawnPoint = numberOfSpawnPointArg != null ? numberOfSpawnPointArg : 8;
 
-        Integer radiusArg = this.radiusArg.get(context);
+        Integer radiusArg = this.centerRadiusArg.get(context);
         int radius = radiusArg != null ? radiusArg : 25;
 
         if (Universe.get().getWorld(worldName) != null) {
@@ -56,7 +61,14 @@ public class GenerateArenaCommand extends AbstractCommand {
             sender.sendMessage(MessageColorUtil.rawStyled(formatted));
             return null;
         }
-        arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius);
+        Integer barrierRadiusArg = this.barrierRadiusArg.get(context);
+        int barrierRadius = barrierRadiusArg != null ? barrierRadiusArg : 100;
+        Integer barrierHeightArg = this.barrierHeightArg.get(context);
+        int barrierHeight = barrierHeightArg != null ? barrierHeightArg : 30;
+
+        Boolean generateHillArg = this.generateHillArg.get(context);
+        boolean generateHillParam = generateHillArg != null ? generateHillArg : true;
+        arenaManager.createArenaWithSpace(context, worldName, sender, numberOfSpawnPoint, radius, barrierRadius, barrierHeight, generateHillParam);
         return null;
     }
 

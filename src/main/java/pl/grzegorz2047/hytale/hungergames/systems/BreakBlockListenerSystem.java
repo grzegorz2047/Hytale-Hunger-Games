@@ -23,7 +23,7 @@ public class BreakBlockListenerSystem extends EntityEventSystem<EntityStore, Bre
         super(BreakBlockEvent.class);
         this.plugin = hungerGames;
         this.arenaManager = arenaManager;
-     }
+    }
 
     @Override
     public void handle(int index,
@@ -47,13 +47,10 @@ public class BreakBlockListenerSystem extends EntityEventSystem<EntityStore, Bre
         String itemId = blockType.getId();
         String tplId = arenaManager.getConfig().getTranslation("hungergames.block.id");
         String formatted = tplId == null ? itemId : tplId.replace("{id}", itemId);
-        System.out.println(formatted);
+//        System.out.println(formatted);
         if (!isAChestNamed(event, player, itemId.toLowerCase())) return;
 
-        String tpl2 = arenaManager.getConfig().getTranslation("hungergames.block.cannotBreak");
-        player.sendMessage(MessageColorUtil.rawStyled(tpl2));
-        event.setCancelled(true);
-      }
+    }
 
     private static boolean isAChestNamed(@NonNullDecl BreakBlockEvent event, Player player, String itemId) {
         return itemId.contains("chest");

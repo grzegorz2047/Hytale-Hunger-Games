@@ -184,7 +184,8 @@ public class ArenaManager {
             return true;
         }
         // Blokuj niszczenie jeśli arena jest aktywna LUB trwa gra
-        return !arena.isActive() && !arena.isIngame();
+        boolean isArenaInGame = arena.isActive() && arena.isIngame();
+        return !isArenaInGame;
     }
 
     private HgArena getArena(String worldName) {
@@ -303,7 +304,7 @@ public class ArenaManager {
         return arena != null && arena.isIngame();
     }
 
-    public void createArenaWithSpace(@NonNullDecl CommandContext context, String worldName, CommandSender sender, int numberOfSpawnPoint, int radius) {
+    public void createArenaWithSpace(@NonNullDecl CommandContext context, String worldName, CommandSender sender, int numberOfSpawnPoint, int radius, int barrierRadius, int barrierHeight, boolean generateHill) {
         String generatorType = "Flat";
         BuilderCodec<? extends IWorldGenProvider> providerCodec =
                 IWorldGenProvider.CODEC.getCodecFor(generatorType);
@@ -341,8 +342,11 @@ public class ArenaManager {
                             }
                             int hillRadius = 10;
                             generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Barrier"), 10));
-                            generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
-                            generationTasks.addAll(generateBoundaryWallTasks(world, 0, 0, 100, 30, BlockType.fromString("Barrier")));
+                            if(generateHill) {
+                                generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
+
+                            }
+                            generationTasks.addAll(generateBoundaryWallTasks(world, 0, 0, barrierRadius, barrierHeight, BlockType.fromString("Barrier")));
                             CompletableFuture
                                     .allOf(generationTasks.toArray(new CompletableFuture[0]))
                                     .thenRun(() -> {
