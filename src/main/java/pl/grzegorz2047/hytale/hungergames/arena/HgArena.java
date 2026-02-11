@@ -143,22 +143,16 @@ public class HgArena {
 
         if (attackerPlayer != null) {
             String displayName = attackerPlayer.getDisplayName();
-            diedPlayer.getWorld().getPlayerRefs().forEach(worldPlayer -> {
-                EventTitleUtil.showEventTitleToPlayer(
-                        worldPlayer,
-                        MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + displayName + " !</color>"),           // Primary title
-                        MessageColorUtil.rawStyled("<color=#FF0000>" + this.activePlayers.size() + " players left!</color>"), // Secondary title
-                        true,                                      // isMajor (large display)
-                        "ui/icons/forest.png",                    // Optional icon (nullable)
-                        4.0f,                                      // Duration (seconds)
-                        1.5f,                                      // Fade in duration
-                        1.5f                                       // Fade out duration
-                );
-            });
+            String message = getTranslationOrDefault("hungergames.death.killedBy", "{victim} has been killed by {killer}!")
+                    .replace("{victim}", diedPlayer.getDisplayName())
+                    .replace("{killer}", displayName);
+            String shortMsg = getTranslationOrDefault("hungergames.death.playersLeft", "{count} players left!")
+                    .replace("{count}", String.valueOf(this.activePlayers.size()));
+            broadcastBoxCenteredMessageToArenaWorldPlayers(getArenaWorld(), Message.raw(message), Message.raw(shortMsg), true);
             UUID attackerUuid = attackerPlayer.getUuid();
             HgPlayer attackerHgPlayer = findHgPlayerByUuid(attackerUuid);
 
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + displayName + " !</color>"));
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + message + "</color>"));
 
             if (attackerHgPlayer != null) {
                 attackerHgPlayer.addKill(); // Zabójstwo w bieżącej grze
@@ -166,7 +160,9 @@ public class HgArena {
                 savePlayerToDatabase(attackerHgPlayer);
             }
         } else {
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has died!</color>"));
+            String deathMessage = getTranslationOrDefault("hungergames.death.died", "{player} has died!")
+                    .replace("{player}", diedPlayer.getDisplayName());
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + deathMessage + "</color>"));
         }
         Store<EntityStore> store = diedPlayer.getPlayerRef().getReference().getStore();
 
@@ -378,7 +374,9 @@ public class HgArena {
                     if (gracePeriodCountdown <= 0) {
                         isGracePeriodActive = false;
                         String gracePeriodEndMsg = config.getTranslation("hungergames.arena.gracePeriodEnded");
+                        String gracePeriodEndDescMsg = config.getTranslation("hungergames.arena.gracePeriodEndedDesc");
                         world.execute(() -> {
+                            broadcastBoxCenteredMessageToArenaWorldPlayers(getArenaWorld(), Message.raw(gracePeriodEndDescMsg), Message.raw(gracePeriodEndMsg), true);
                             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(gracePeriodEndMsg));
                         });
                     }
@@ -405,7 +403,7 @@ public class HgArena {
                 }
 
                 if (currentCountdown <= 0) {
-                    world.execute(() -> startIngamePhase(deathmatchArenaSeconds, GameState.INGAME_DEATHMATCH_PHASE, "hungergames.arena.deathmatchStart"));
+                    world.execute(() -> startAndMoveToSpawnPhase(deathmatchArenaSeconds, GameState.INGAME_DEATHMATCH_PHASE, "hungergames.arena.deathmatchStart"));
                 }
                 synchronized (activePlayers) {
                     if (this.activePlayers.isEmpty()) {
@@ -509,7 +507,7 @@ public class HgArena {
         return spawnPoint.getPosition();
     }
 
-    private void startIngamePhase(int ingameArenaSeconds, GameState gamePhase, String key) {
+    private void startAndMoveToSpawnPhase(int ingameArenaSeconds, GameState gamePhase, String key) {
         currentCountdown = ingameArenaSeconds;
         state = gamePhase;
         String tpl = this.config.getTranslation(key);
@@ -522,8 +520,6 @@ public class HgArena {
             }
         }
         teleportPlayersToTheSpawnPoints(playerSpawnPoints);
-        broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("The game has been started!"));
-
     }
 
     private boolean isNotEnoughtPlayers(int playersCount) {
