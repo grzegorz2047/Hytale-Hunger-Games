@@ -13,6 +13,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import pl.grzegorz2047.hytale.hungergames.arena.HgPlayer;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 
 import static pl.grzegorz2047.hytale.hungergames.util.PlayerComponentUtils.findPlayerInPlayerComponentsBag;
@@ -40,7 +41,7 @@ public class HudService {
         lobbyHud.setKillStats(kills);
     }
 
-    public void initArenaScoreboard(String arenaName, Player player, PlayerRef playerRef, String numOfActivePlayers) {
+    public void initArenaScoreboard(String arenaName, Player player, PlayerRef playerRef, String numOfActivePlayers, HgPlayer hgPlayer) {
         boolean isHudEnabled = this.config.isHudEnabled();
         String arenaNameHud = config.getTranslation("hungergames.hud.arena").replace("{arenaName}", arenaName);
 
@@ -49,12 +50,11 @@ public class HudService {
             if (multipleHud == null) {
 //            this.playersHud.put(playerRef, hud);
                 player.getHudManager().setCustomHud(playerRef, hud);
-
             } else {
                 MultipleHUD.getInstance().setCustomHud(player, playerRef, "HungerGames2047_arena_scoreboard", hud);
 //            this.playersHud.put(playerRef, hud);
             }
-
+            hgPlayer.setCustomHud(hud);
             hud.setArenaName(arenaNameHud);
             hud.setNumOfActivePlayers(numOfActivePlayers);
             String time = config.getTranslation("hungergames.hud.time").replace("{time}", "00:00");
@@ -64,7 +64,7 @@ public class HudService {
         }
     }
 
-    public static void resetHud(PlayerRef playerRef) {
+    public static void resetHud(PlayerRef playerRef, String hudId) {
         Player player = getPlayer(playerRef);
         HudManager hudManager = player.getHudManager();
         PluginBase multipleHud = PluginManager.get().getPlugin(PluginIdentifier.fromString("Buuz135:MultipleHUD"));
@@ -77,7 +77,7 @@ public class HudService {
                 }
             });
         } else {
-            MultipleHUD.getInstance().hideCustomHud(player, "HungerGames2047_arena_scoreboard");
+            MultipleHUD.getInstance().hideCustomHud(player, hudId);
 //            this.playersHud.put(playerRef, hud);
         }
 

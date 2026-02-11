@@ -10,18 +10,17 @@ import com.hypixel.hytale.math.vector.Vector3i;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.entity.entities.player.hud.CustomUIHud;
 import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
 import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
-import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
@@ -83,6 +82,8 @@ public class HgArena {
                 .replace("{maxPlayers}", String.valueOf(this.playerSpawnPoints.size()));
     }
 
+
+
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
 
     private GameState state = GameState.WAITING;
@@ -131,14 +132,28 @@ public class HgArena {
         if (!this.isIngame()) {
             return;
         }
+
         HgPlayer hgPlayerByUuid = findHgPlayerByUuid(deadPlayerUuid);
         this.activePlayers.remove(hgPlayerByUuid);
 
         if (attackerPlayer != null) {
+            String displayName = attackerPlayer.getDisplayName();
+            diedPlayer.getWorld().getPlayerRefs().forEach(worldPlayer -> {
+                EventTitleUtil.showEventTitleToPlayer(
+                        worldPlayer,
+                        MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + displayName + " !</color>"),           // Primary title
+                        MessageColorUtil.rawStyled("<color=#FF0000>" + this.activePlayers.size() + " players left!</color>"), // Secondary title
+                        true,                                      // isMajor (large display)
+                        "ui/icons/forest.png",                    // Optional icon (nullable)
+                        4.0f,                                      // Duration (seconds)
+                        1.5f,                                      // Fade in duration
+                        1.5f                                       // Fade out duration
+                );
+            });
             UUID attackerUuid = attackerPlayer.getUuid();
             HgPlayer attackerHgPlayer = findHgPlayerByUuid(attackerUuid);
 
-            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + attackerPlayer.getDisplayName() + " !</color>"));
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled("<color=#FF0000>" + diedPlayer.getDisplayName() + " has been killed by " + displayName + " !</color>"));
 
             if (attackerHgPlayer != null) {
                 attackerHgPlayer.addKill(); // Zabójstwo w bieżącej grze
@@ -310,7 +325,7 @@ public class HgArena {
                         if (player == null) {
                             continue;
                         }
-                        updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
+                        updateScoreboardForPlayer(hgPlayer);
                         p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                     }
                 });
@@ -337,7 +352,7 @@ public class HgArena {
                                 Ref<EntityStore> reference = p.getReference();
                                 Store<EntityStore> store = world.getEntityStore().getStore();
                                 Player player = findPlayerInPlayerComponentsBag(store, reference);
-                                updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
+                                updateScoreboardForPlayer(hgPlayer);
                                 p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                             }
                         }
@@ -382,7 +397,7 @@ public class HgArena {
                             if (reference == null) continue;
                             Store<EntityStore> activeStore = reference.getStore();
                             Player player = findPlayerInPlayerComponentsBag(activeStore, reference);
-                            updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
+                            updateScoreboardForPlayer(hgPlayer);
                             p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                         }
                     }
@@ -402,7 +417,7 @@ public class HgArena {
                                     Ref<EntityStore> reference = p.getReference();
                                     if (reference == null) continue;
                                     Player player = findPlayerInPlayerComponentsBag(reference.getStore(), reference);
-                                    updateScoreboardForPlayer(player.getHudManager().getCustomHud(), hgPlayer.getUuid());
+                                    updateScoreboardForPlayer(hgPlayer);
                                     p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
                                 }
                             }
@@ -422,7 +437,7 @@ public class HgArena {
                 Ref<EntityStore> refForTeleport = p.getReference();
                 // walidacja referencji przed użyciem
                 try {
-                    HudService.resetHud(p.getPlayerRef());
+                    HudService.resetHud(p.getPlayerRef(), "HungerGames2047_arena_scoreboard");
 
                     teleportToMainLobby(refForTeleport, p.getDisplayName());
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
@@ -478,22 +493,21 @@ public class HgArena {
     /**
      * Aktualizuje HUD gracza z jego bieżącą liczbą zabójstw
      */
-    private void updateScoreboardForPlayer(CustomUIHud customHud, UUID playerUuid) {
-        if (customHud instanceof MinigameHud customHudMinigame) {
-            // Pobierz gracza aby uzyskać jego liczbę zabójstw
-            HgPlayer hgPlayer = findHgPlayerByUuid(playerUuid);
-            String playerKills = getTranslationOrDefault("hungergames.hud.yourKills", "Your Kills").replace("{kills}",String.valueOf((hgPlayer != null ? hgPlayer.getKills() : 0)));
-
-            // Aktualizuj główne informacje
-            String arenaTime = getTranslationOrDefault("hungergames.hud.time", "time").replace("{time}", formatHHMMSS(currentCountdown));
-            String arenaName = getTranslationOrDefault("hungergames.hud.arena", "arena").replace("{arenaName}", this.worldName);
-            customHudMinigame.setTimeText(arenaTime);
-            customHudMinigame.setNumOfActivePlayers(this.getArenaPlayersStat());
-            customHudMinigame.setArenaName(arenaName);
-
-            // Ustaw liczbę zabójstw gracza
-            customHudMinigame.setPlayerKills(playerKills);
+    private void updateScoreboardForPlayer(HgPlayer hgPlayer) {
+        MinigameHud customHudMinigame = hgPlayer.getCustomHud();
+        if (customHudMinigame == null) {
+            return;
         }
+        String playerKills = getTranslationOrDefault("hungergames.hud.yourKills", "Your Kills").replace("{kills}", String.valueOf(hgPlayer.getKills()));
+        // Aktualizuj główne informacje
+        String arenaTime = getTranslationOrDefault("hungergames.hud.time", "time").replace("{time}", formatHHMMSS(currentCountdown));
+        String arenaName = getTranslationOrDefault("hungergames.hud.arena", "arena").replace("{arenaName}", this.worldName);
+        customHudMinigame.setTimeText(arenaTime);
+        customHudMinigame.setNumOfActivePlayers(this.getArenaPlayersStat());
+        customHudMinigame.setArenaName(arenaName);
+
+        // Ustaw liczbę zabójstw gracza
+        customHudMinigame.setPlayerKills(playerKills);
     }
 
     private String buildKillFeedText() {
@@ -660,13 +674,13 @@ public class HgArena {
                     hgPlayer.resetKills(); // Resetuj liczę zabójstw w bieżącej grze
                 } else {
                     // Gracz nie istnieje - stwórz nowego
-                    hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
+                    hgPlayer = new HgPlayer(uuid, playerName, 0, 0, null);
                     savePlayerToDatabase(hgPlayer);
                 }
             } catch (Exception e) {
                 getLogger().atWarning().withCause(e)
                         .log("Failed to load player %s from database, creating new: %s", uuid, e.getMessage());
-                hgPlayer = new HgPlayer(uuid, playerName, 0, 0);
+                hgPlayer = new HgPlayer(uuid, playerName, 0, 0, null);
                 savePlayerToDatabase(hgPlayer);
             }
 
@@ -690,8 +704,8 @@ public class HgArena {
                 String tplJoined = this.config.getTranslation("hungergames.arena.joined").replace("{arenaName}", worldName);
                 String tplplayerJoined = this.config.getTranslation("hungergames.arena.numplayerjoined");
                 broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tplplayerJoined == null ? "" : tplplayerJoined.replace("{numberOfPlayers}", String.valueOf(this.activePlayers.size())).replace("{maxNumberOfPlayersInArena}", String.valueOf(this.playerSpawnPoints.size())).replace("{arenaName}", this.worldName)));
-                player.sendMessage(MessageColorUtil.rawStyled(tplJoined == null ? "" : tplJoined.replace("{worldName}", this.worldName)));
-
+                player.sendMessage(MessageColorUtil.rawStyled(tplJoined.replace("{worldName}", this.worldName)));
+                arenaWorld.execute(() -> broadcastBoxCenteredMessageToArenaWorldPlayers(arenaWorld, Message.raw("Player " + player.getDisplayName() + " joined the arena!"), Message.raw("")));
             } catch (Throwable t) {
                 getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
             }
@@ -700,6 +714,14 @@ public class HgArena {
             getLogger().atWarning().withCause(outer).log("Error while finishing join for player %s: %s", uuid, outer.getMessage());
         }
 
+    }
+
+    private static void broadcastBoxCenteredMessageToArenaWorldPlayers(World arenaWorld, Message mainMessage, Message secondaryTitle) {
+        arenaWorld.getPlayerRefs().forEach(x -> {
+//                    NotificationUtil.sendNotification(x.getPacketHandler(), "Joined " + player.getDisplayName());
+//                    NotificationUtil.sendNotification(x.getPacketHandler(), "Joined " + player.getDisplayName(), NotificationStyle.Danger);
+            EventTitleUtil.showEventTitleToPlayer(x, mainMessage, secondaryTitle, true);
+        });
     }
 
     private static void healPlayer(Store<EntityStore> store, Ref<EntityStore> reference) {
@@ -742,7 +764,7 @@ public class HgArena {
     /**
      * Znajduje gracza w liście aktywnych graczy po UUID
      */
-    private HgPlayer findHgPlayerByUuid(UUID uuid) {
+    public HgPlayer findHgPlayerByUuid(UUID uuid) {
         if (uuid == null) {
             return null;
         }

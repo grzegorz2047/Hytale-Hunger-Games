@@ -90,7 +90,7 @@ public class SqlitePlayerRepository implements PlayerRepository {
                         String playerName = rs.getString("player_name");
                         int kills = rs.getInt("kills");
                         int globalKills = rs.getInt("global_kills");
-                        return Optional.of(new HgPlayer(UUID.fromString(uuidStr), playerName, kills, globalKills));
+                        return Optional.of(new HgPlayer(UUID.fromString(uuidStr), playerName, kills, globalKills, null));
                     }
                 }
             }

@@ -155,10 +155,11 @@ public class ArenaManager {
         }
         player.getWorld().execute(() -> {
             PlayerRef playerRef = player.getPlayerRef();
+            HudService.resetHud(playerRef, "HungerGames2047_lobby");
             hgArena.join(player.getWorld(), player.getUuid());
 
             // przygotowanie HUD i teleport w bezpiecznym bloku try/catch
-            hudService.initArenaScoreboard(arenaName, player, playerRef, hgArena.getArenaPlayersStat());
+            hudService.initArenaScoreboard(arenaName, player, playerRef, hgArena.getArenaPlayersStat(), hgArena.findHgPlayerByUuid(player.getUuid()));
             hgArena.forceStart();
         });
 
@@ -289,9 +290,11 @@ public class ArenaManager {
             return ;
         }
 
-        arena.join(player.getWorld(), player.getUuid());
+        World world = player.getWorld();
         PlayerRef playerRef = player.getPlayerRef();
-        hudService.initArenaScoreboard(arenaName, player, playerRef, arena.getArenaPlayersStat());
+        HudService.resetHud(playerRef, "HungerGames2047_lobby");
+        hudService.initArenaScoreboard(arenaName, player, playerRef, arena.getArenaPlayersStat(), arena.findHgPlayerByUuid(player.getUuid()));
+        arena.join(world, player.getUuid());
 
     }
 
@@ -603,7 +606,7 @@ public class ArenaManager {
     }
 
     public void playerLeft(PlayerRef playerRef) {
-        hudService.resetHud(playerRef);
+        hudService.resetHud(playerRef, "HungerGames2047_arena_scoreboard");
 
         this.listOfArenas.forEach((_, value) -> value.playerLeft(playerRef));
     }

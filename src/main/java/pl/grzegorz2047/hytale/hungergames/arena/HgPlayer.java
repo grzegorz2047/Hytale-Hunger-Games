@@ -1,5 +1,7 @@
 package pl.grzegorz2047.hytale.hungergames.arena;
 
+import pl.grzegorz2047.hytale.hungergames.hud.MinigameHud;
+
 import java.util.UUID;
 import java.util.Objects;
 
@@ -12,20 +14,22 @@ public class HgPlayer {
     private final String playerName;
     private int kills; // Zabójstwa w bieżącej grze
     private int globalKills; // Suma wszystkich zabójstw ze wszystkich gier (z bazy danych)
+    private MinigameHud customHud;
 
     public HgPlayer(UUID uuid, String playerName) {
-        this(uuid, playerName, 0, 0);
+        this(uuid, playerName, 0, 0, null);
     }
 
     public HgPlayer(UUID uuid, String playerName, int kills) {
-        this(uuid, playerName, kills, 0);
+        this(uuid, playerName, kills, 0, null);
     }
 
-    public HgPlayer(UUID uuid, String playerName, int kills, int globalKills) {
+    public HgPlayer(UUID uuid, String playerName, int kills, int globalKills, MinigameHud customHud) {
         this.uuid = Objects.requireNonNull(uuid, "UUID nie może być null");
         this.playerName = Objects.requireNonNull(playerName, "Nazwa gracza nie może być null");
         this.kills = Math.max(0, kills);
         this.globalKills = Math.max(0, globalKills);
+        this.customHud = customHud;
     }
 
     public UUID getUuid() {
@@ -81,5 +85,13 @@ public class HgPlayer {
                 ", kills=" + kills +
                 ", globalKills=" + globalKills +
                 '}';
+    }
+
+    public MinigameHud getCustomHud() {
+        return customHud;
+    }
+
+    public void setCustomHud(MinigameHud minigameHud) {
+        this.customHud = minigameHud;
     }
 }
