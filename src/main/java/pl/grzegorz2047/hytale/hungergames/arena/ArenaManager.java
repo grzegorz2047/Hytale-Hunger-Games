@@ -139,18 +139,18 @@ public class ArenaManager {
         return true;
     }
 
-    public boolean forceStartArena(String arenaName, Player player) {
+    public void forceStartArena(String arenaName, Player player) {
         if (!this.arenaExists(arenaName)) {
             player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Arena not found</color>"));
-            return false;
+            return;
         }
         if (!this.isArenaEnabled(arenaName)) {
             player.sendMessage(MessageColorUtil.rawStyled("<color=#FF0000>Arena not enabled</color>"));
-            return false;
+            return;
         }
         HgArena hgArena = getArena(arenaName);
         if (hgArena == null) {
-            return false;
+            return;
 
         }
         player.getWorld().execute(() -> {
@@ -163,7 +163,6 @@ public class ArenaManager {
             hgArena.forceStart();
         });
 
-        return true;
     }
 
 
@@ -293,9 +292,8 @@ public class ArenaManager {
         World world = player.getWorld();
         PlayerRef playerRef = player.getPlayerRef();
         HudService.resetHud(playerRef, "HungerGames2047_lobby");
-        hudService.initArenaScoreboard(arenaName, player, playerRef, arena.getArenaPlayersStat(), arena.findHgPlayerByUuid(player.getUuid()));
         arena.join(world, player.getUuid());
-
+        hudService.initArenaScoreboard(arenaName, player, playerRef, arena.getArenaPlayersStat(), arena.findHgPlayerByUuid(player.getUuid()));
     }
 
 
@@ -606,8 +604,7 @@ public class ArenaManager {
     }
 
     public void playerLeft(PlayerRef playerRef) {
-        hudService.resetHud(playerRef, "HungerGames2047_arena_scoreboard");
-
+        HudService.resetHud(playerRef, "HungerGames2047_arena_scoreboard");
         this.listOfArenas.forEach((_, value) -> value.playerLeft(playerRef));
     }
     @NullableDecl

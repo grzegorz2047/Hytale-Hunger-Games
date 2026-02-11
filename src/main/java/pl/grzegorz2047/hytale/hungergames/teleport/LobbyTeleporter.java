@@ -45,8 +45,7 @@ public final class LobbyTeleporter {
     public static Transform getTransform(World defaultWorld, Ref<EntityStore> reference) {
         ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
         Store<EntityStore> store = reference.getStore();
-        Transform spawnPoint = spawnProvider.getSpawnPoint(reference, store);
-        return spawnPoint;
+        return spawnProvider.getSpawnPoint(reference, store);
     }
 
     private static void addTeleportTask(Ref<EntityStore> playerRef, World world, Vector3d spawnCoordPos) {

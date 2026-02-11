@@ -69,7 +69,7 @@ public class PlayerListeners {
         if (player == null) return;
         PlayerRef playerRef = holder.getComponent(PlayerRef.getComponentType());
         World world = event.getWorld();
-        if (world.equals(Universe.get().getDefaultWorld())) {
+        if (isLobbyWorld(world)) {
             boolean isHudEnabled = config.get().isHudEnabled();
             boolean isLobbyHudEnabled = config.get().isLobbyHudEnabled();
             if (isHudEnabled && isLobbyHudEnabled) {
@@ -88,6 +88,10 @@ public class PlayerListeners {
                 }
             }
         }
+    }
+
+    private static boolean isLobbyWorld(World world) {
+        return world.equals(Universe.get().getDefaultWorld());
     }
 
 
@@ -125,7 +129,7 @@ public class PlayerListeners {
         Holder<EntityStore> holder = event.getHolder();
 
         if (config.get().forceLobbySpawn()) {
-            boolean isAllowedToBeFarFromLobbySpawnAndInLobbyWorld = event.getWorld().equals(Universe.get().getDefaultWorld()) && !config.get().isForceLobbySpawnEvenIfOnLobbyWorld();
+            boolean isAllowedToBeFarFromLobbySpawnAndInLobbyWorld = isLobbyWorld(event.getWorld()) && !config.get().isForceLobbySpawnEvenIfOnLobbyWorld();
             if (isAllowedToBeFarFromLobbySpawnAndInLobbyWorld) {
                 return;
             }
@@ -163,7 +167,7 @@ public class PlayerListeners {
             }
             boolean playerFirstJoin = player.isFirstSpawn();
             boolean playerOnAnyArena = arenaManager.isPlayerOnAnyArena(player);
-            if (world.equals(Universe.get().getDefaultWorld())) {
+            if (isLobbyWorld(world)) {
                 arenaManager.preparePlayerJoinedServer(player);
             }
         });

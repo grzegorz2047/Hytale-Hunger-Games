@@ -18,7 +18,6 @@ import com.hypixel.hytale.server.core.modules.time.WorldTimeResource;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
-import com.hypixel.hytale.server.core.universe.world.spawn.ISpawnProvider;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
@@ -81,7 +80,6 @@ public class HgArena {
         return playersStatLabel.replace("{activePlayers}", String.valueOf(this.activePlayers.size()))
                 .replace("{maxPlayers}", String.valueOf(this.playerSpawnPoints.size()));
     }
-
 
 
     public enum GameState {WAITING, STARTING, INGAME_MAIN_PHASE, INGAME_DEATHMATCH_PHASE, RESTARTING}
@@ -240,7 +238,7 @@ public class HgArena {
                 () -> {
                     getArenaWorld().execute(() -> startGame(true));
                 },
-                1, TimeUnit.SECONDS
+                2, TimeUnit.SECONDS
         );
 
         return true;
@@ -361,7 +359,7 @@ public class HgArena {
                 }
 
                 if (currentCountdown <= 0) {
-                    startIngamePhase(deathmatchArenaSeconds, GameState.INGAME_DEATHMATCH_PHASE, "hungergames.arena.deathmatchStart");
+                    world.execute(() -> startIngamePhase(deathmatchArenaSeconds, GameState.INGAME_DEATHMATCH_PHASE, "hungergames.arena.deathmatchStart"));
                 }
                 synchronized (activePlayers) {
                     if (this.activePlayers.isEmpty()) {
@@ -432,18 +430,15 @@ public class HgArena {
     private void resetArenaNoWinners(World world) {
         world.execute(() -> {
             this.activePlayers.clear();
-            for (Player p : world.getPlayers()) {
+            for (PlayerRef p : world.getPlayerRefs()) {
                 if (p == null || p.getReference() == null) continue;
-                Ref<EntityStore> refForTeleport = p.getReference();
-                // walidacja referencji przed użyciem
                 try {
-                    HudService.resetHud(p.getPlayerRef(), "HungerGames2047_arena_scoreboard");
-
-                    teleportToMainLobby(refForTeleport, p.getDisplayName());
+                    HudService.resetHud(p, "HungerGames2047_arena_scoreboard");
+                    LobbyTeleporter.teleportToLobby(p);
                     String tpl = this.config.getTranslation("hungergames.arena.gameEndedReturn");
                     p.sendMessage(MessageColorUtil.rawStyled(tpl));
                 } catch (Throwable t) {
-                    getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", p.getDisplayName(), t.getMessage());
+                    getLogger().atWarning().withCause(t).log("Skipping teleport for possibly invalid reference for player %s: %s", p.getUsername(), t.getMessage());
                 }
             }
         });
@@ -462,11 +457,8 @@ public class HgArena {
 
     @NonNullDecl
     private static Vector3d getMainLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
-        ISpawnProvider spawnProvider = defaultWorld.getWorldConfig().getSpawnProvider();
-        Store<EntityStore> storeLocal = refForTeleport.getStore();
-        Transform spawnPoint = spawnProvider.getSpawnPoint(refForTeleport, storeLocal);
-        Vector3d position = spawnPoint.getPosition();
-        return position;
+        Transform spawnPoint = LobbyTeleporter.getTransform(defaultWorld, refForTeleport);
+        return spawnPoint.getPosition();
     }
 
     private void startIngamePhase(int ingameArenaSeconds, GameState gamePhase, String key) {
@@ -575,25 +567,23 @@ public class HgArena {
             playerSnapshot = new ArrayList<>(activePlayers);
         }
 
-        world.execute(() -> {
-            int idx = 0;
-            for (HgPlayer hgPlayer : playerSnapshot) {
-                PlayerRef p = Universe.get().getPlayer(hgPlayer.getUuid());
-                try {
-                    if (p == null || p.getReference() == null) continue;
-                    // wybieramy punkt startowy (round-robin)
-                    int spawnIndex = idx % spawnPoints.size();
-                    Vector3d spawn = spawnPoints.get(spawnIndex);
-                    getLogger().atInfo().log("Teleporting player %s to spawn point %d: %.2f, %.2f, %.2f",
-                            hgPlayer.getPlayerName(), spawnIndex, spawn.x, spawn.y, spawn.z);
-                    addTeleportTask(p.getReference(), world, spawn);
-                } catch (Throwable t) {
-                    getLogger().atWarning().withCause(t).log("Failed to teleport player %s to spawn point: %s",
-                            hgPlayer.getPlayerName(), t.getMessage());
-                }
-                idx++;
+        int idx = 0;
+        for (HgPlayer hgPlayer : playerSnapshot) {
+            PlayerRef p = Universe.get().getPlayer(hgPlayer.getUuid());
+            try {
+                if (p == null || p.getReference() == null) continue;
+                // wybieramy punkt startowy (round-robin)
+                int spawnIndex = idx % playerSpawnPoints.size();
+                Vector3d spawn = playerSpawnPoints.get(spawnIndex);
+                getLogger().atInfo().log("Teleporting player %s to spawn point %d: %.2f, %.2f, %.2f",
+                        hgPlayer.getPlayerName(), spawnIndex, spawn.x, spawn.y, spawn.z);
+                addTeleportTask(p.getReference(), getArenaWorld(), spawn);
+            } catch (Throwable t) {
+                getLogger().atWarning().withCause(t).log("Failed to teleport player %s to spawn point: %s",
+                        hgPlayer.getPlayerName(), t.getMessage());
             }
-        });
+            idx++;
+        }
     }
 
     public boolean isActive() {
