@@ -166,7 +166,6 @@ public class ArenaManager {
     }
 
 
-
     public boolean isArenaEnabled(String arenaName) {
         return this.getArena(arenaName).isActive();
     }
@@ -287,7 +286,7 @@ public class ArenaManager {
         if (isArenaIngame(arenaName)) {
             String tpl = this.config.getTranslation("hungergames.arena.alreadyIngame").replace("{arenaName}", arenaName);
             player.sendMessage(MessageColorUtil.rawStyled(tpl));
-            return ;
+            return;
         }
 
         World world = player.getWorld();
@@ -342,7 +341,7 @@ public class ArenaManager {
                             }
                             int hillRadius = 10;
                             generationTasks.addAll(generateLobbyAreaTasks(world, lobbySpawnLocation, BlockType.fromString("Barrier"), 10));
-                            if(generateHill) {
+                            if (generateHill) {
                                 generationTasks.addAll(generateHillTasks(context, world, 0, 0, hillRadius, maxHeight, blockType));
 
                             }
@@ -611,6 +610,7 @@ public class ArenaManager {
         HudService.resetHud(playerRef, "HungerGames2047_arena_scoreboard");
         this.listOfArenas.forEach((_, value) -> value.playerLeft(playerRef));
     }
+
     @NullableDecl
     private static Player getPlayer(PlayerRef playerRef) {
         Player player = null;
@@ -620,6 +620,7 @@ public class ArenaManager {
         }
         return player;
     }
+
     public boolean isPlayerOnAnyArena(Player player) {
         return this.listOfArenas.values().stream().anyMatch(arena -> arena.isPlayerInArena(player.getUuid()));
     }
@@ -631,13 +632,13 @@ public class ArenaManager {
 
     public void playerDied(Player deadPlayer, World world, Player attackerPlayer) {
         HgArena arena = this.getArena(world.getName());
-        if(arena == null) return;
+        if (arena == null) return;
         arena.playerDied(deadPlayer, attackerPlayer);
     }
 
     public void playerDied(Player deadPlayer, World world) {
         HgArena arena = this.getArena(world.getName());
-        if(arena == null) return;
+        if (arena == null) return;
         arena.playerDied(deadPlayer, null);
     }
 
@@ -687,9 +688,7 @@ public class ArenaManager {
             return false;
         }
         HgArena arena = this.getArena(arenaName);
-        arena.isPlayerInArena(uuid);
-        boolean arenaNotInGame = !arena.isIngame();
-        return arenaNotInGame;
+        return !arena.isIngame() && arena.isPlayerInArena(uuid);
     }
 
     public void playerDisconnected(PlayerRef playerRef) {
