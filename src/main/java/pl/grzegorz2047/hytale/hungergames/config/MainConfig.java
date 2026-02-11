@@ -67,7 +67,7 @@ public class MainConfig {
                     "hungergames.arena.gracePeriodEnded:Grace period ended!",
                     "hungergames.arena.gracePeriodEndedDesc:PvP is now enabled.",
                     "hungergames.arena.gracePeriodRemaining:Grace period ends in {seconds}s",
-                    "hungergames.hud.gracePeriod:PvP start in {seconds}s",
+                    "hungergames.hud.gracePeriod:PvP starts in {seconds}s",
                     "hungergames.arena.deathmatchStart:Deathmatch start!",
                     "hungergames.arena.deathmatchIn:Deathmatch in {seconds}",
                     "hungergames.arena.gameEndsIn:Game ends in {seconds}",
