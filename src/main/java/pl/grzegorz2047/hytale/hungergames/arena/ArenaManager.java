@@ -691,6 +691,14 @@ public class ArenaManager {
         return !arena.isIngame() && arena.isPlayerInArena(uuid);
     }
 
+    public boolean isInGracePeriod(String arenaName, UUID uuid) {
+        if (!arenaExists(arenaName)) {
+            return false;
+        }
+        HgArena arena = this.getArena(arenaName);
+        return arena.isIngame() && arena.isPlayerInArena(uuid) && arena.isGracePeriodActive();
+    }
+
     public void playerDisconnected(PlayerRef playerRef) {
         this.listOfArenas.forEach((_, value) -> value.playerDisconnected(playerRef));
 

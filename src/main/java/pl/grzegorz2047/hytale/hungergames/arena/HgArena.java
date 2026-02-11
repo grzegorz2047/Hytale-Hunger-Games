@@ -52,6 +52,10 @@ public class HgArena {
     // Odliczanie / stan oczekiwania
     private final int startingArenaSeconds;
     private final int ingameArenaSeconds;
+    private final int gracePeriodSeconds;
+    private final boolean gracePeriodEnabled;
+    private int gracePeriodCountdown;
+    private boolean isGracePeriodActive = false;
     private int currentCountdown;
     private List<Vector3i> openedChests = new ArrayList<>();
 
@@ -119,6 +123,9 @@ public class HgArena {
         this.deathmatchArenaSeconds = config.getDeathmatchArenaSeconds();
         this.startingArenaSeconds = config.getStartingArenaSeconds();
         this.ingameArenaSeconds = config.getIngameArenaSeconds();
+        this.gracePeriodSeconds = config.getGracePeriodSeconds();
+        this.gracePeriodEnabled = config.isGracePeriodEnabled();
+        this.gracePeriodCountdown = gracePeriodSeconds;
         this.currentCountdown = startingArenaSeconds;
         if (startScheduler) {
             startClockScheduler();
@@ -248,6 +255,15 @@ public class HgArena {
         // Wymuszenie startu: natychmiast ustawiamy stan ingame i teleportujemy graczy
         this.state = GameState.INGAME_MAIN_PHASE;
         this.currentCountdown = ingameArenaSeconds;
+
+        // Activate grace period only if enabled
+        if (gracePeriodEnabled) {
+            this.isGracePeriodActive = true;
+            this.gracePeriodCountdown = gracePeriodSeconds;
+        } else {
+            this.isGracePeriodActive = false;
+        }
+
         World world = getArenaWorld();
         if (world == null) {
             return;
@@ -275,6 +291,19 @@ public class HgArena {
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(input));
         } else {
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(translation));
+        }
+
+        // Notify players about grace period only if enabled
+        if (gracePeriodEnabled) {
+            String gracePeriodMsg = config.getTranslation("hungergames.arena.gracePeriodActive")
+                    .replace("{seconds}", String.valueOf(gracePeriodSeconds));
+            String gracePeriodPrimaryMsg = config.getTranslation("hungergames.arena.gracePeriodActivePrimary")
+                    .replace("{seconds}", String.valueOf(gracePeriodSeconds));
+            String gracePeriodSecondaryMsg = config.getTranslation("hungergames.arena.gracePeriodActiveSecondary")
+                    .replace("{seconds}", String.valueOf(gracePeriodSeconds));
+            broadcastBoxCenteredMessageToArenaWorldPlayers(getArenaWorld(),Message.raw(gracePeriodSecondaryMsg), Message.raw(gracePeriodPrimaryMsg), true);
+            broadcastMessageToActivePlayers(MessageColorUtil.rawStyledStack(gracePeriodMsg));
+
         }
     }
 
@@ -324,7 +353,9 @@ public class HgArena {
                             continue;
                         }
                         updateScoreboardForPlayer(hgPlayer);
-                        p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                        if (!config.isHudEnabled()) {
+                            p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", formatHHMMSS(currentCountdown))));
+                        }
                     }
                 });
 
@@ -340,6 +371,19 @@ public class HgArena {
             }
             case INGAME_MAIN_PHASE -> {
                 countdown();
+
+                // Handle grace period countdown
+                if (isGracePeriodActive) {
+                    gracePeriodCountdown--;
+                    if (gracePeriodCountdown <= 0) {
+                        isGracePeriodActive = false;
+                        String gracePeriodEndMsg = config.getTranslation("hungergames.arena.gracePeriodEnded");
+                        world.execute(() -> {
+                            broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(gracePeriodEndMsg));
+                        });
+                    }
+                }
+
                 synchronized (activePlayers) {
 
                     world.execute(() -> {
@@ -351,7 +395,9 @@ public class HgArena {
                                 Store<EntityStore> store = world.getEntityStore().getStore();
                                 Player player = findPlayerInPlayerComponentsBag(store, reference);
                                 updateScoreboardForPlayer(hgPlayer);
-                                p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                                if (!config.isHudEnabled()) {
+                                    p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", formatHHMMSS(currentCountdown))));
+                                }
                             }
                         }
 
@@ -396,7 +442,9 @@ public class HgArena {
                             Store<EntityStore> activeStore = reference.getStore();
                             Player player = findPlayerInPlayerComponentsBag(activeStore, reference);
                             updateScoreboardForPlayer(hgPlayer);
-                            p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                            if (!config.isHudEnabled()) {
+                                p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", String.valueOf(currentCountdown))));
+                            }
                         }
                     }
                 });
@@ -500,6 +548,15 @@ public class HgArena {
 
         // Ustaw liczbę zabójstw gracza
         customHudMinigame.setPlayerKills(playerKills);
+
+        // Update grace period display
+        if (isGracePeriodActive) {
+            String gracePeriodText = getTranslationOrDefault("hungergames.hud.gracePeriod", "⚔ PvP in {seconds}s")
+                    .replace("{seconds}", String.valueOf(gracePeriodCountdown));
+            customHudMinigame.setGracePeriod(gracePeriodText);
+        } else {
+            customHudMinigame.setGracePeriod("");
+        }
     }
 
     private String buildKillFeedText() {
@@ -550,6 +607,8 @@ public class HgArena {
         this.openedChests.clear();
         this.state = GameState.WAITING;
         this.currentCountdown = startingArenaSeconds;
+        this.isGracePeriodActive = false;
+        this.gracePeriodCountdown = gracePeriodSeconds;
     }
 
     protected void teleportPlayersToTheSpawnPoints(List<Vector3d> spawnPoints) {
@@ -695,7 +754,7 @@ public class HgArena {
                 String tplplayerJoined = this.config.getTranslation("hungergames.arena.numplayerjoined");
                 broadcastMessageToActivePlayers(MessageColorUtil.rawStyled(tplplayerJoined == null ? "" : tplplayerJoined.replace("{numberOfPlayers}", String.valueOf(this.activePlayers.size())).replace("{maxNumberOfPlayersInArena}", String.valueOf(this.playerSpawnPoints.size())).replace("{arenaName}", this.worldName)));
                 player.sendMessage(MessageColorUtil.rawStyled(tplJoined.replace("{worldName}", this.worldName)));
-                arenaWorld.execute(() -> broadcastBoxCenteredMessageToArenaWorldPlayers(arenaWorld, Message.raw("Player " + player.getDisplayName() + " joined the arena!"), Message.raw("")));
+                arenaWorld.execute(() -> broadcastBoxCenteredMessageToArenaWorldPlayers(arenaWorld, Message.raw("Player " + player.getDisplayName() + " joined the arena!"), Message.raw(""), true));
             } catch (Throwable t) {
                 getLogger().atWarning().withCause(t).log("Failed to prepare/teleport player %s to arena %s: %s", uuid, this.worldName, t.getMessage());
             }
@@ -706,11 +765,12 @@ public class HgArena {
 
     }
 
-    private static void broadcastBoxCenteredMessageToArenaWorldPlayers(World arenaWorld, Message mainMessage, Message secondaryTitle) {
+    private static void broadcastBoxCenteredMessageToArenaWorldPlayers(World arenaWorld, Message mainMessage, Message secondaryTitle, boolean isMajor) {
         arenaWorld.getPlayerRefs().forEach(x -> {
 //                    NotificationUtil.sendNotification(x.getPacketHandler(), "Joined " + player.getDisplayName());
 //                    NotificationUtil.sendNotification(x.getPacketHandler(), "Joined " + player.getDisplayName(), NotificationStyle.Danger);
-            EventTitleUtil.showEventTitleToPlayer(x, mainMessage, secondaryTitle, true);
+            EventTitleUtil.showEventTitleToPlayer(x, mainMessage, secondaryTitle, isMajor, "ui/icons/forest.png", 4.0F, 1.5F, 1.5F);
+
         });
     }
 
@@ -749,6 +809,10 @@ public class HgArena {
 
     public boolean isIngame() {
         return this.state.equals(GameState.INGAME_DEATHMATCH_PHASE) || this.state.equals(GameState.INGAME_MAIN_PHASE);
+    }
+
+    public boolean isGracePeriodActive() {
+        return isGracePeriodActive;
     }
 
     /**

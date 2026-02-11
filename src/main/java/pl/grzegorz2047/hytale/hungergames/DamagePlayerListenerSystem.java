@@ -71,6 +71,23 @@ public class DamagePlayerListenerSystem extends DamageEventSystem {
             damage.setCancelled(true);
             playerDamaged.sendMessage(Message.translation(
                     String.format("Arena Lobby: Blocked %.1f damage!", damageAmount)));
+        } else if (arenaManager.isInGracePeriod(world.getName(), playerDamaged.getUuid())) {
+            // Check if damage is from another player during grace period
+            Damage.Source source = damage.getSource();
+            if (source instanceof Damage.EntitySource entitySource) {
+                Ref<EntityStore> sourceRef = entitySource.getRef();
+                if (sourceRef.isValid()) {
+                    Player attacker = store.getComponent(sourceRef, Player.getComponentType());
+                    if (attacker != null) {
+                        // This is player vs player damage during grace period - cancel it
+                        damage.setCancelled(true);
+                        attacker.sendMessage(Message.translation(
+                                "Grace period is active! You cannot damage other players yet."));
+                        return;
+                    }
+                }
+            }
+            // Allow environmental damage during grace period (falls, etc.)
         } else {
 
             EntityStatMap entityStatMapComponent = chunk.getComponent(index, EntityStatMap.getComponentType());

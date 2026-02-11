@@ -13,7 +13,7 @@ class ArenaManagerTest {
 
     @Test
     void createExistsAndCanBreakAndEnableBehavior() {
-        ArenaManager manager = new ArenaManager(new MainConfig(), new InMemoryRepository(), false);
+        ArenaManager manager = new ArenaManager(new MainConfig(), new InMemoryRepository(), false, null);
 
         // przed utworzeniem - nie istnieje
         assertFalse(manager.arenaExists("world1"));

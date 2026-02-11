@@ -10,7 +10,7 @@ import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 public class MinigameHud extends CustomUIHud {
     private static final int CONTAINER_RIGHT = 55;
     private final int widthClockArea;
-    private final int CONTAINER_HEIGHT = 150;
+    private final int CONTAINER_HEIGHT = 200;
     private final int CONTAINER_TOP = 300;
     private final boolean backgroundColorEnabled;
     private volatile String time = "00:00";
@@ -18,6 +18,7 @@ public class MinigameHud extends CustomUIHud {
     private String arenaName = "arenaName";
     private String numOfActivePlayers = "0/0";
     private String playerKills = "kills: 0";
+    private String gracePeriod = "";
     private String message = "";
 
     public MinigameHud(PlayerRef playerRef, int fontSize, int widthClockArea, boolean backgroundColorEnabled) {
@@ -45,6 +46,7 @@ public class MinigameHud extends CustomUIHud {
         uiCommandBuilder.set("#ArenaName.Text", this.arenaName);
         uiCommandBuilder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         uiCommandBuilder.set("#PlayerKills.Text", this.playerKills);
+        uiCommandBuilder.set("#GracePeriod.Text", this.gracePeriod);
         uiCommandBuilder.set("#Title.Text", this.message);
         Anchor data = new Anchor();
         data.setWidth(Value.of(this.widthClockArea));
@@ -74,6 +76,7 @@ public class MinigameHud extends CustomUIHud {
         builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         builder.set("#ArenaTimer.Text", this.time);
         builder.set("#PlayerKills.Text", this.playerKills);
+        builder.set("#GracePeriod.Text", this.gracePeriod);
         this.update(false, builder);
     }
 
@@ -116,6 +119,7 @@ public class MinigameHud extends CustomUIHud {
         builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         builder.set("#ArenaTimer.Text", this.time);
         builder.set("#PlayerKills.Text", this.playerKills);
+        builder.set("#GracePeriod.Text", this.gracePeriod);
         this.update(false, builder);
     }
 
@@ -126,6 +130,7 @@ public class MinigameHud extends CustomUIHud {
         builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         builder.set("#ArenaTimer.Text", this.time);
         builder.set("#PlayerKills.Text", this.playerKills);
+        builder.set("#GracePeriod.Text", this.gracePeriod);
         this.update(false, builder);
     }
 
@@ -139,6 +144,21 @@ public class MinigameHud extends CustomUIHud {
         builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
         builder.set("#ArenaTimer.Text", this.time);
         builder.set("#PlayerKills.Text", this.playerKills);
+        builder.set("#GracePeriod.Text", this.gracePeriod);
+        this.update(false, builder);
+    }
+
+    public void setGracePeriod(String gracePeriod) {
+        if (gracePeriod == null || gracePeriod.equals(this.gracePeriod)) {
+            return;
+        }
+        this.gracePeriod = gracePeriod;
+        UICommandBuilder builder = new UICommandBuilder();
+        builder.set("#ArenaName.Text", this.arenaName);
+        builder.set("#ArenaNumberOfPlayers.Text", this.numOfActivePlayers);
+        builder.set("#ArenaTimer.Text", this.time);
+        builder.set("#PlayerKills.Text", this.playerKills);
+        builder.set("#GracePeriod.Text", this.gracePeriod);
         this.update(false, builder);
     }
 }

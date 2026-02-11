@@ -51,5 +51,15 @@ Group #SimpleHudObjWithOpacity {
               Alignment: Start,
             );
         }
+
+        Label #GracePeriod {
+            Padding: (Top: 12 * 11, Left: 24);
+            Text: "";
+            Style: (HorizontalAlignment: Start, VerticalAlignment: Start,
+              FontSize: 24,
+              TextColor: #FFD700(0.95),
+              Alignment: Start,
+            );
+        }
     }
 }

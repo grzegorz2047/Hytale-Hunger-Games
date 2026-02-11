@@ -24,6 +24,8 @@ public class MainConfig {
     private int deathmatchArenaSeconds = 360;
     private int startingArenaSeconds = 20;
     private int ingameArenaSeconds = 360;
+    private int gracePeriodSeconds = 30;
+    private boolean gracePeriodEnabled = true;
     private boolean isHudEnabled = true;
     private boolean shouldPrepareInventoryOnLobbyJoin = false;
     private boolean forceLobbySpawn = true;
@@ -59,9 +61,15 @@ public class MainConfig {
                     "hungergames.arena.countingCancelled:Countdown cancelled: not enough players",
                     "hungergames.arena.startIn:Start in {seconds}s",
                     "hungergames.arena.arenaStarted:Arena {arenaName} started!",
+                    "hungergames.arena.gracePeriodActive:Grace period active! Players are invincible for {seconds} seconds.",
+                    "hungergames.arena.gracePeriodActivePrimary:Grace period active!",
+                    "hungergames.arena.gracePeriodActiveSecondary:Players are invincible for {seconds} seconds.",
+                    "hungergames.arena.gracePeriodEnded:Grace period ended! PvP is now enabled.",
+                    "hungergames.arena.gracePeriodRemaining:Grace period ends in {seconds}s",
+                    "hungergames.hud.gracePeriod:PvP start in {seconds}s",
                     "hungergames.arena.deathmatchStart:Deathmatch start!",
-                    "hungergames.arena.deathmatchIn:Deathmatch in {seconds}s",
-                    "hungergames.arena.gameEndsIn:Game ends in {seconds}s",
+                    "hungergames.arena.deathmatchIn:Deathmatch in {seconds}",
+                    "hungergames.arena.gameEndsIn:Game ends in {seconds}",
                     "hungergames.arena.gameEndedReturn:Game ended! Returning to lobby.",
                     "hungergames.arena.countingStarted:Counting started: game starts in {seconds}s",
                     "hungergames.block.cannotBreak:<color=#FF0000>You cannot break it</color>",
@@ -130,6 +138,8 @@ public class MainConfig {
             .append(new KeyedCodec<>("DeathmatchArenaSeconds", Codec.INTEGER), (config, f) -> config.deathmatchArenaSeconds = f, (config) -> config.deathmatchArenaSeconds).addValidator(Validators.nonNull()).documentation("deathmatchArenaSeconds").add()
             .append(new KeyedCodec<>("StartingArenaSeconds", Codec.INTEGER), (config, f) -> config.startingArenaSeconds = f, (config) -> config.startingArenaSeconds).addValidator(Validators.nonNull()).documentation("startingArenaSeconds").add()
             .append(new KeyedCodec<>("IngameArenaSeconds", Codec.INTEGER), (config, f) -> config.ingameArenaSeconds = f, (config) -> config.ingameArenaSeconds).addValidator(Validators.nonNull()).documentation("ingameArenaSeconds").add()
+            .append(new KeyedCodec<>("GracePeriodSeconds", Codec.INTEGER), (config, f) -> config.gracePeriodSeconds = f, (config) -> config.gracePeriodSeconds).addValidator(Validators.nonNull()).documentation("gracePeriodSeconds").add()
+            .append(new KeyedCodec<>("GracePeriodEnabled", Codec.BOOLEAN), (config, f) -> config.gracePeriodEnabled = f, (config) -> config.gracePeriodEnabled).addValidator(Validators.nonNull()).documentation("gracePeriodEnabled").add()
             .append(new KeyedCodec<>("Messages", Codec.STRING_ARRAY), (config, f) -> config.messages = parseMessages(f), (config) -> config.messagesConfigArray).addValidator(Validators.nonNull()).documentation("messages").add()
             .append(new KeyedCodec<>("ItemsToFillChest", Codec.STRING_ARRAY), (config, f) -> config.itemsToFillChest = f, (config) -> config.itemsToFillChest).addValidator(Validators.nonNull()).documentation("worldsWithClockEnabled").add()
             .build();
@@ -161,6 +171,14 @@ public class MainConfig {
 
     public int getIngameArenaSeconds() {
         return ingameArenaSeconds;
+    }
+
+    public int getGracePeriodSeconds() {
+        return gracePeriodSeconds;
+    }
+
+    public boolean isGracePeriodEnabled() {
+        return gracePeriodEnabled;
     }
 
     public boolean isHudEnabled() {
