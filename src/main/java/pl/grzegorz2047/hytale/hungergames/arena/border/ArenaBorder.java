@@ -47,7 +47,7 @@ public class ArenaBorder {
 //        matrix.rotateAxis(0, (double)0.0F, (double)1.0F, (double)0.0F, tmp);
 //        DebugUtils.addSector(getArenaWorld(),borderCenterLocation.x, borderCenterLocation.y, borderCenterLocation.z, 0,scale, 0, getBorderColor(),10, false);
         float time = 10;
-        DebugUtils.add(getArenaWorld(), DebugShape.Sector, matrix, getBorderColor(), time, false);
+        DebugUtils.add(getArenaWorld(), DebugShape.Sphere, matrix, getBorderColor(), time, false);
     }
 
     private World getArenaWorld() {
