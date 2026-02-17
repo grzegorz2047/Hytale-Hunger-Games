@@ -39,12 +39,15 @@ public class ArenaBorder {
 
     public void refresh() {
         double scale = getArenaBorderSize() * 2;
+        Matrix4d tmp = new Matrix4d();
         Matrix4d matrix = new Matrix4d();
         matrix.identity();
         matrix.translate(borderCenterLocation.x, borderCenterLocation.y, borderCenterLocation.z);
         matrix.scale(scale, 100, scale);
+//        matrix.rotateAxis(0, (double)0.0F, (double)1.0F, (double)0.0F, tmp);
+//        DebugUtils.addSector(getArenaWorld(),borderCenterLocation.x, borderCenterLocation.y, borderCenterLocation.z, 0,scale, 0, getBorderColor(),10, false);
         float time = 10;
-        DebugUtils.add(getArenaWorld(), DebugShape.Sphere, matrix, getBorderColor(), time, false);
+        DebugUtils.add(getArenaWorld(), DebugShape.Sector, matrix, getBorderColor(), time, false);
     }
 
     private World getArenaWorld() {

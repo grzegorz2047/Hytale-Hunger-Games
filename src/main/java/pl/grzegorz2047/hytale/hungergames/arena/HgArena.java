@@ -65,6 +65,7 @@ public class HgArena {
     private double arenaBorderSize = 100;
     private ArenaBorder arenaBorder;
     private int arenaBorderDamage;
+    private boolean arenaBorderEnabled;
 
     public boolean isBlockOpenedInArena(Vector3i position) {
         return this.openedChests.contains(position);
@@ -136,6 +137,7 @@ public class HgArena {
         this.currentCountdown = startingArenaSeconds;
         this.arenaBorderSize = config.getArenaBorderSize();
         this.arenaBorderDamage = config.getArenaBorderDamage();
+        this.arenaBorderEnabled = config.isArenaBorderEnabled();
         this.arenaBorder = new ArenaBorder(worldName, arenaLobbySpawnLocation, arenaBorderSize);
         if (startScheduler) {
             startClockScheduler();
@@ -362,14 +364,20 @@ public class HgArena {
                         if (!config.isHudEnabled()) {
                             p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", formatHHMMSS(currentCountdown))));
                         }
-                        boolean shouldDamagePlayer = arenaBorder.isOutOfBound(player.getTransformComponent().getPosition());
-                        if (shouldDamagePlayer) {
-                            Damage damage = new Damage(Damage.NULL_SOURCE, DamageCause.OUT_OF_WORLD, (float) getArenaBorderDamage());
-                            DamageSystems.executeDamage(reference, store, damage);
+                        if (isArenaBorderEnabled()) {
+                            boolean shouldDamagePlayer = arenaBorder.isOutOfBound(player.getTransformComponent().getPosition());
+                            if (shouldDamagePlayer) {
+                                Damage damage = new Damage(Damage.NULL_SOURCE, DamageCause.OUT_OF_WORLD, (float) getArenaBorderDamage());
+                                DamageSystems.executeDamage(reference, store, damage);
+                            }
                         }
                     }
-                    arenaBorder.shrink();
-                    arenaBorder.refresh();
+
+                    if (isArenaBorderEnabled()) {
+                        arenaBorder.shrink();
+                        arenaBorder.refresh();
+                    }
+
                 });
 
                 if (currentCountdown <= 0) {
@@ -416,7 +424,9 @@ public class HgArena {
                             }
 
                         }
-                        arenaBorder.refresh();
+                        if (isArenaBorderEnabled()) {
+                            arenaBorder.refresh();
+                        }
                     });
                 }
 
@@ -489,6 +499,10 @@ public class HgArena {
             }
         }
 
+    }
+
+    private boolean isArenaBorderEnabled() {
+        return arenaBorderEnabled;
     }
 
     private int getArenaBorderDamage() {

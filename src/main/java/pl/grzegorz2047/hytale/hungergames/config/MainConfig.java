@@ -35,6 +35,7 @@ public class MainConfig {
 
     private boolean lobbyHudEnabled = false;
     private int arenaBorderDamage = 1;
+    private boolean arenaBorderEnabled = true;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -137,6 +138,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("ArenaBorderEnabled", Codec.BOOLEAN), (config, f) -> config.arenaBorderEnabled = f, (config) -> config.arenaBorderEnabled).addValidator(Validators.nonNull()).documentation("arenaBorderEnabled").add()
             .append(new KeyedCodec<>("ShouldTeleportOnDeathMatch", Codec.BOOLEAN), (config, f) -> config.shouldTeleportOnDeathMatch = f, (config) -> config.shouldTeleportOnDeathMatch).addValidator(Validators.nonNull()).documentation("shouldTeleportOnDeathMatch").add()
             .append(new KeyedCodec<>("ForceLobbySpawnEvenIfOnLobbyWorld", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawnEvenIfOnLobbyWorld = f, (config) -> config.forceLobbySpawnEvenIfOnLobbyWorld).addValidator(Validators.nonNull()).documentation("forceLobbySpawnEvenIfOnLobbyWorld").add()
             .append(new KeyedCodec<>("LobbyHudEnabled", Codec.BOOLEAN), (config, f) -> config.lobbyHudEnabled = f, (config) -> config.lobbyHudEnabled).addValidator(Validators.nonNull()).documentation("lobbyHudEnabled").add()
@@ -222,5 +224,9 @@ public class MainConfig {
 
     public int getArenaBorderDamage() {
         return arenaBorderDamage;
+    }
+
+    public boolean isArenaBorderEnabled() {
+        return arenaBorderEnabled;
     }
 }
