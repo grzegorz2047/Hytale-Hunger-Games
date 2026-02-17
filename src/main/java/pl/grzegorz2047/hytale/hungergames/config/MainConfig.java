@@ -25,12 +25,16 @@ public class MainConfig {
     private int startingArenaSeconds = 20;
     private int ingameArenaSeconds = 360;
     private int gracePeriodSeconds = 30;
+    private int arenaBorderSize = 100;
     private boolean gracePeriodEnabled = true;
     private boolean isHudEnabled = true;
     private boolean shouldPrepareInventoryOnLobbyJoin = false;
     private boolean forceLobbySpawn = true;
     private boolean forceLobbySpawnEvenIfOnLobbyWorld = false;
+    private boolean shouldTeleportOnDeathMatch = true;
+
     private boolean lobbyHudEnabled = false;
+    private int arenaBorderDamage = 1;
 
     public MainConfig() {
         this.messages = parseMessages(messagesConfigArray);
@@ -133,6 +137,7 @@ public class MainConfig {
     }
 
     public static final BuilderCodec<MainConfig> CODEC = BuilderCodec.builder(MainConfig.class, MainConfig::new)
+            .append(new KeyedCodec<>("ShouldTeleportOnDeathMatch", Codec.BOOLEAN), (config, f) -> config.shouldTeleportOnDeathMatch = f, (config) -> config.shouldTeleportOnDeathMatch).addValidator(Validators.nonNull()).documentation("shouldTeleportOnDeathMatch").add()
             .append(new KeyedCodec<>("ForceLobbySpawnEvenIfOnLobbyWorld", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawnEvenIfOnLobbyWorld = f, (config) -> config.forceLobbySpawnEvenIfOnLobbyWorld).addValidator(Validators.nonNull()).documentation("forceLobbySpawnEvenIfOnLobbyWorld").add()
             .append(new KeyedCodec<>("LobbyHudEnabled", Codec.BOOLEAN), (config, f) -> config.lobbyHudEnabled = f, (config) -> config.lobbyHudEnabled).addValidator(Validators.nonNull()).documentation("lobbyHudEnabled").add()
             .append(new KeyedCodec<>("ForceLobbySpawn", Codec.BOOLEAN), (config, f) -> config.forceLobbySpawn = f, (config) -> config.forceLobbySpawn).addValidator(Validators.nonNull()).documentation("forceLobbySpawn").add()
@@ -143,6 +148,8 @@ public class MainConfig {
             .append(new KeyedCodec<>("StartingArenaSeconds", Codec.INTEGER), (config, f) -> config.startingArenaSeconds = f, (config) -> config.startingArenaSeconds).addValidator(Validators.nonNull()).documentation("startingArenaSeconds").add()
             .append(new KeyedCodec<>("IngameArenaSeconds", Codec.INTEGER), (config, f) -> config.ingameArenaSeconds = f, (config) -> config.ingameArenaSeconds).addValidator(Validators.nonNull()).documentation("ingameArenaSeconds").add()
             .append(new KeyedCodec<>("GracePeriodSeconds", Codec.INTEGER), (config, f) -> config.gracePeriodSeconds = f, (config) -> config.gracePeriodSeconds).addValidator(Validators.nonNull()).documentation("gracePeriodSeconds").add()
+            .append(new KeyedCodec<>("ArenaBorderSize", Codec.INTEGER), (config, f) -> config.arenaBorderSize = f, (config) -> config.arenaBorderSize).addValidator(Validators.nonNull()).documentation("arenaBorderSize").add()
+            .append(new KeyedCodec<>("ArenaBorderDamage", Codec.INTEGER), (config, f) -> config.arenaBorderDamage = f, (config) -> config.arenaBorderDamage).addValidator(Validators.nonNull()).documentation("arenaBorderDamage").add()
             .append(new KeyedCodec<>("GracePeriodEnabled", Codec.BOOLEAN), (config, f) -> config.gracePeriodEnabled = f, (config) -> config.gracePeriodEnabled).addValidator(Validators.nonNull()).documentation("gracePeriodEnabled").add()
             .append(new KeyedCodec<>("Messages", Codec.STRING_ARRAY), (config, f) -> config.messages = parseMessages(f), (config) -> config.messagesConfigArray).addValidator(Validators.nonNull()).documentation("messages").add()
             .append(new KeyedCodec<>("ItemsToFillChest", Codec.STRING_ARRAY), (config, f) -> config.itemsToFillChest = f, (config) -> config.itemsToFillChest).addValidator(Validators.nonNull()).documentation("worldsWithClockEnabled").add()
@@ -203,5 +210,17 @@ public class MainConfig {
 
     public boolean isForceLobbySpawnEvenIfOnLobbyWorld() {
         return forceLobbySpawnEvenIfOnLobbyWorld;
+    }
+
+    public boolean shouldTeleportOnDeathMatch() {
+        return shouldTeleportOnDeathMatch;
+    }
+
+    public double getArenaBorderSize() {
+        return arenaBorderSize;
+    }
+
+    public int getArenaBorderDamage() {
+        return arenaBorderDamage;
     }
 }

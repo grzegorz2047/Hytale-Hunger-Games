@@ -139,7 +139,7 @@ public class DamagePlayerListenerSystem extends DamageEventSystem {
                         }
                     });
                 } else {
-                    System.out.println("ELESELSE AAAAAND DAMAGE: " + damageAmount + " NEW HEALTH: " + newValue);
+//                    System.out.println("ELESELSE AAAAAND DAMAGE: " + damageAmount + " NEW HEALTH: " + newValue);
 
                 }
 

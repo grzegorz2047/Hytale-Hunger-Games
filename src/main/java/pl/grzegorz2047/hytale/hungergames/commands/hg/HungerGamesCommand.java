@@ -31,6 +31,7 @@ public class HungerGamesCommand extends AbstractCommandCollection {
         this.mainConfig = mainConfig;
         this.arenaListPage = arenaListPage;
 //        this.addSubCommand(new TeleportAllCommand());
+//        this.addSubCommand(new ArenaBorderCommand("border", "lets you configure arena border", arenaManager));
         this.addSubCommand(new CreateArenaCommand("create", "creates raw arena to configure", arenaManager));
         this.addSubCommand(new DisableArenaCommand("disable", "disables arena", arenaManager));
         this.addSubCommand(new EnableArenaCommand("enable", "enables arena", arenaManager));

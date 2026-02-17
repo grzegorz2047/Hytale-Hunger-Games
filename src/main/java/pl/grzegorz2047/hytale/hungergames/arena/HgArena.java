@@ -11,6 +11,9 @@ import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.inventory.Inventory;
+import com.hypixel.hytale.server.core.modules.entity.damage.Damage;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageCause;
+import com.hypixel.hytale.server.core.modules.entity.damage.DamageSystems;
 import com.hypixel.hytale.server.core.modules.entity.teleport.Teleport;
 import com.hypixel.hytale.server.core.modules.entitystats.EntityStatMap;
 import com.hypixel.hytale.server.core.modules.entitystats.asset.DefaultEntityStatTypes;
@@ -22,6 +25,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.hypixel.hytale.server.core.util.EventTitleUtil;
 import org.checkerframework.checker.nullness.compatqual.NonNullDecl;
 import org.checkerframework.checker.nullness.compatqual.NullableDecl;
+import pl.grzegorz2047.hytale.hungergames.arena.border.ArenaBorder;
 import pl.grzegorz2047.hytale.hungergames.config.MainConfig;
 import pl.grzegorz2047.hytale.hungergames.db.PlayerRepository;
 import pl.grzegorz2047.hytale.hungergames.hud.HudService;
@@ -58,6 +62,9 @@ public class HgArena {
     private boolean isGracePeriodActive = false;
     private int currentCountdown;
     private List<Vector3i> openedChests = new ArrayList<>();
+    private double arenaBorderSize = 100;
+    private ArenaBorder arenaBorder;
+    private int arenaBorderDamage;
 
     public boolean isBlockOpenedInArena(Vector3i position) {
         return this.openedChests.contains(position);
@@ -127,6 +134,9 @@ public class HgArena {
         this.gracePeriodEnabled = config.isGracePeriodEnabled();
         this.gracePeriodCountdown = gracePeriodSeconds;
         this.currentCountdown = startingArenaSeconds;
+        this.arenaBorderSize = config.getArenaBorderSize();
+        this.arenaBorderDamage = config.getArenaBorderDamage();
+        this.arenaBorder = new ArenaBorder(worldName, arenaLobbySpawnLocation, arenaBorderSize);
         if (startScheduler) {
             startClockScheduler();
         }
@@ -297,7 +307,7 @@ public class HgArena {
                     .replace("{seconds}", String.valueOf(gracePeriodSeconds));
             String gracePeriodSecondaryMsg = config.getTranslation("hungergames.arena.gracePeriodActiveSecondary")
                     .replace("{seconds}", String.valueOf(gracePeriodSeconds));
-            broadcastBoxCenteredMessageToArenaWorldPlayers(getArenaWorld(),Message.raw(gracePeriodSecondaryMsg), Message.raw(gracePeriodPrimaryMsg), true);
+            broadcastBoxCenteredMessageToArenaWorldPlayers(getArenaWorld(), Message.raw(gracePeriodSecondaryMsg), Message.raw(gracePeriodPrimaryMsg), true);
             broadcastMessageToActivePlayers(MessageColorUtil.rawStyledStack(gracePeriodMsg));
 
         }
@@ -352,7 +362,14 @@ public class HgArena {
                         if (!config.isHudEnabled()) {
                             p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", formatHHMMSS(currentCountdown))));
                         }
+                        boolean shouldDamagePlayer = arenaBorder.isOutOfBound(player.getTransformComponent().getPosition());
+                        if (shouldDamagePlayer) {
+                            Damage damage = new Damage(Damage.NULL_SOURCE, DamageCause.OUT_OF_WORLD, (float) getArenaBorderDamage());
+                            DamageSystems.executeDamage(reference, store, damage);
+                        }
                     }
+                    arenaBorder.shrink();
+                    arenaBorder.refresh();
                 });
 
                 if (currentCountdown <= 0) {
@@ -397,8 +414,9 @@ public class HgArena {
                                     p.sendMessage(MessageColorUtil.rawStyled(tpl == null ? "" : tpl.replace("{seconds}", formatHHMMSS(currentCountdown))));
                                 }
                             }
-                        }
 
+                        }
+                        arenaBorder.refresh();
                     });
                 }
 
@@ -473,6 +491,15 @@ public class HgArena {
 
     }
 
+    private int getArenaBorderDamage() {
+        return arenaBorderDamage;
+    }
+
+    private float getArenaBorderLifeTime() {
+        return 1;
+    }
+
+
     private void resetArenaNoWinners(World world) {
         world.execute(() -> {
             this.activePlayers.clear();
@@ -493,7 +520,7 @@ public class HgArena {
 
     private void teleportToMainLobby(Ref<EntityStore> refForTeleport, String displayName) {
         World defaultWorld = Objects.requireNonNull(Universe.get().getDefaultWorld());
-        Vector3d position = getMainLobbyPosition(defaultWorld, refForTeleport);
+        Vector3d position = getLobbyPosition(defaultWorld, refForTeleport);
         try {
             addTeleportTask(refForTeleport, defaultWorld, position);
         } catch (Throwable t) {
@@ -502,7 +529,7 @@ public class HgArena {
     }
 
     @NonNullDecl
-    private static Vector3d getMainLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
+    private static Vector3d getLobbyPosition(World defaultWorld, Ref<EntityStore> refForTeleport) {
         Transform spawnPoint = LobbyTeleporter.getTransform(defaultWorld, refForTeleport);
         return spawnPoint.getPosition();
     }
@@ -519,7 +546,13 @@ public class HgArena {
                 }
             }
         }
-        teleportPlayersToTheSpawnPoints(playerSpawnPoints);
+        if (gamePhase.equals(GameState.INGAME_DEATHMATCH_PHASE)) {
+            if (config.shouldTeleportOnDeathMatch()) {
+                teleportPlayersToTheSpawnPoints(playerSpawnPoints);
+            }
+        } else {
+            teleportPlayersToTheSpawnPoints(playerSpawnPoints);
+        }
     }
 
     private boolean isNotEnoughtPlayers(int playersCount) {
